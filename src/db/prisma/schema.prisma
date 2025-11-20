@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PURCHASE_OFFICER
+  CHINA_WAREHOUSE
+  LIBYA_WAREHOUSE
+  CUSTOMER
+}
+
+enum OrderStatus {
+  purchased
+  arrived_to_china
+  shipping_to_libya
+  arrived_libya
+  ready_for_pickup
+  delivered
+}
+
+enum ShipmentStatus {
+  pending_inbound
+  in_transit
+  arrived
+  ready_for_pickup
+  delivered
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  name          String
+  email         String          @unique
+  passwordHash  String
+  role          Role
+  customerId    Int?
+  tokenVersion  Int             @default(0)
+  messages      OrderMessage[]
+  createdAt     DateTime        @default(now())
+  customer      Customer?
+}
+
+model Customer {
+  id     Int     @id @default(autoincrement())
+  name   String
+  orders Order[]
+  user   User?   @relation(fields: [userId], references: [id])
+  userId Int?    @unique
+}
+
+model Order {
+  id             Int            @id @default(autoincrement())
+  trackingNumber String         @unique
+  name           String
+  usdPrice       Float
+  cnyPrice       Float?
+  productUrl     String?
+  notes          String?
+  status         OrderStatus    @default(purchased)
+  weight         Float?
+  customerId     Int
+  customer       Customer       @relation(fields: [customerId], references: [id])
+  shipmentItems  ShipmentItem[]
+  logs           OrderLog[]
+  messages       OrderMessage[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model OrderLog {
+  id        Int         @id @default(autoincrement())
+  orderId   Int
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id])
+}
+
+model Warehouse {
+  id      Int        @id @default(autoincrement())
+  name    String
+  country String
+  fromShipments Shipment[] @relation("FromWarehouse")
+  toShipments   Shipment[] @relation("ToWarehouse")
+}
+
+model Shipment {
+  id              Int            @id @default(autoincrement())
+  shipmentId      String         @unique
+  weight          Float
+  fromWarehouseId Int
+  toWarehouseId   Int
+  status          ShipmentStatus @default(pending_inbound)
+  items           ShipmentItem[]
+  fromWarehouse   Warehouse      @relation("FromWarehouse", fields: [fromWarehouseId], references: [id])
+  toWarehouse     Warehouse      @relation("ToWarehouse", fields: [toWarehouseId], references: [id])
+}
+
+model ShipmentItem {
+  id         Int      @id @default(autoincrement())
+  shipmentId Int
+  orderId    Int
+  shipment   Shipment @relation(fields: [shipmentId], references: [id])
+  order      Order    @relation(fields: [orderId], references: [id])
+}
+
+model OrderMessage {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  authorId  Int
+  content   String
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
+}
