@@ -1,96 +1,9 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type UniqueIdentifier,
-} from "@dnd-kit/core"
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import {
-  IconChevronDown,
-  IconChevronLeft,
-  IconChevronRight,
-  IconChevronsLeft,
-  IconChevronsRight,
-  IconCircleCheckFilled,
-  IconDotsVertical,
-  IconGripVertical,
-  IconLayoutColumns,
-  IconLoader,
-  IconPlus,
-  IconTrendingUp,
-} from "@tabler/icons-react"
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  Row,
-  SortingState,
-  useReactTable,
-  VisibilityState,
-} from "@tanstack/react-table"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
-import { toast } from "sonner"
-import { z } from "zod"
-
-import { useIsMobile } from "@/hooks/use-mobile"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
+import { loadOrders } from "../slices/orderSlice";
 import {
   Table,
   TableBody,
@@ -98,423 +11,141 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
-import { Order } from "@/features/orders/slices/orderSlice"
-import { CreateOrderDialog } from "./CreateOrderDialog";
-import { ChinaWarehouseUpdateDialog } from "./ChinaWarehouseUpdateDialog";
-import { useAuth } from "@/features/auth/hooks/useAuth"
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import ChangeStatusDialog from "./ChangeStatusDialog";
+import { OrderDetailsDrawer } from "./OrderDetailsDrawer";
+import { Order } from "../slices/orderSlice";
+import { useState } from "react";
+import { exportToCSV } from "@/lib/exportToCSV";
 
-// Define schema based on Order type
-export const schema = z.object({
-  id: z.number(),
-  trackingNumber: z.string(),
-  name: z.string(),
-  status: z.string(),
-  usdPrice: z.number(),
-  customerId: z.number(),
-})
-
-// Create a separate component for the drag handle
-function DragHandle({ id }: { id: number }) {
-  const { attributes, listeners } = useSortable({
-    id,
-  })
-
-  return (
-    <Button
-      {...attributes}
-      {...listeners}
-      variant="ghost"
-      size="icon"
-      className="text-muted-foreground size-7 hover:bg-transparent"
-    >
-      <IconGripVertical className="text-muted-foreground size-3" />
-      <span className="sr-only">Drag to reorder</span>
-    </Button>
-  )
+interface OrdersDataTableProps {
+  filters?: Record<string, string | number>;
+  lastScanTime?: number;
 }
 
-function DraggableRow({ row }: { row: Row<Order> }) {
-  const { transform, transition, setNodeRef, isDragging } = useSortable({
-    id: row.original.id,
-  })
+const statusMap: Record<string, string> = {
+  purchased: "تم الشراء",
+  arrived_to_china: "وصل إلى الصين",
+  shipping_to_libya: "جاري الشحن إلى ليبيا",
+  arrived_libya: "وصل إلى ليبيا",
+  ready_for_pickup: "جاهز للاستلام",
+  delivered: "تم التسليم",
+};
 
-  return (
-    <TableRow
-      data-state={row.getIsSelected() && "selected"}
-      data-dragging={isDragging}
-      ref={setNodeRef}
-      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition: transition,
-      }}
-    >
-      {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id}>
-          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-        </TableCell>
-      ))}
-    </TableRow>
-  )
-}
+const exportOrders = (orders: Order[]) => {
+  const columnMappings = {
+    trackingNumber: "رقم التتبع",
+    name: "اسم الطلب",
+    "customer.user.name": "العميل",
+    usdPrice: "السعر (USD)",
+    "shippingRate.name": "نوع الشحن",
+    shippingCost: "تكلفة الشحن",
+    status: "الحالة"
+  };
+  
+  // Transform status to Arabic before export
+  const dataToExport = orders.map(order => ({
+    ...order,
+    status: statusMap[order.status] || order.status
+  }));
+  
+  exportToCSV(dataToExport, columnMappings, "orders");
+};
 
-export function OrdersDataTable({
-  data: initialData,
-}: {
-  data: Order[]
-}) {
-  const [data, setData] = React.useState<Order[]>(() => initialData)
-  const [rowSelection, setRowSelection] = React.useState({})
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [pagination, setPagination] = React.useState({
-    pageIndex: 0,
-    pageSize: 10,
-  })
-  const sortableId = React.useId()
-  const sensors = useSensors(
-    useSensor(MouseSensor, {}),
-    useSensor(TouchSensor, {}),
-    useSensor(KeyboardSensor, {})
-  )
-  const { user } = useAuth();
+export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps) {
+  const router = useRouter();
+  const dispatch = useReduxDispatch();
+  const { list: orders, status, error } = useReduxSelector((state) => state.orders);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  const columns = React.useMemo<ColumnDef<Order>[]>(
-    () => [
-      {
-        id: "drag",
-        header: () => null,
-        cell: ({ row }) => <DragHandle id={row.original.id} />,
-      },
-      {
-        id: "select",
-        header: ({ table }) => (
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={
-                table.getIsAllPageRowsSelected() ||
-                (table.getIsSomePageRowsSelected() && "indeterminate")
-              }
-              onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-              aria-label="Select all"
-            />
-          </div>
-        ),
-        cell: ({ row }) => (
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={row.getIsSelected()}
-              onCheckedChange={(value) => row.toggleSelected(!!value)}
-              aria-label="Select row"
-            />
-          </div>
-        ),
-        enableSorting: false,
-        enableHiding: false,
-      },
-      {
-        accessorKey: "trackingNumber",
-        header: "Tracking Number",
-        cell: ({ row }) => (
-          <div className="font-medium">{row.original.trackingNumber}</div>
-        ),
-        enableHiding: false,
-      },
-      {
-        accessorKey: "name",
-        header: "Product Name",
-        cell: ({ row }) => (
-          <div className="max-w-[200px] truncate" title={row.original.name}>
-            {row.original.name}
-          </div>
-        ),
-      },
-      {
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ row }) => (
-          <Badge variant="outline" className="text-muted-foreground px-1.5 capitalize">
-            {row.original.status.replace(/_/g, " ")}
-          </Badge>
-        ),
-      },
-      {
-        accessorKey: "usdPrice",
-        header: () => <div className="text-right">Price (USD)</div>,
-        cell: ({ row }) => (
-          <div className="text-right font-medium">
-            ${row.original.usdPrice.toFixed(2)}
-          </div>
-        ),
-      },
-      {
-        accessorKey: "customerId",
-        header: "Customer ID",
-        cell: ({ row }) => (
-          <div className="text-muted-foreground">#{row.original.customerId}</div>
-        ),
-      },
-      {
-        id: "actions",
-        cell: ({ row }) => {
-          if (user?.role === 'china_warehouse') {
-            return <ChinaWarehouseUpdateDialog order={row.original} />;
-          }
-          
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-                  size="icon"
-                >
-                  <IconDotsVertical />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-32">
-                <DropdownMenuItem>View Details</DropdownMenuItem>
-                <DropdownMenuItem>Edit Order</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          );
-        },
-      },
-    ],
-    [user]
-  );
+  useEffect(() => {
+    dispatch(loadOrders(filters));
+  }, [dispatch, JSON.stringify(filters)]);
 
-  // Update local state when prop changes
-  React.useEffect(() => {
-    setData(initialData);
-  }, [initialData]);
-
-  const dataIds = React.useMemo<UniqueIdentifier[]>(
-    () => data?.map(({ id }) => id) || [],
-    [data]
-  )
-
-  const table = useReactTable({
-    data,
-    columns,
-    state: {
-      sorting,
-      columnVisibility,
-      rowSelection,
-      columnFilters,
-      pagination,
-    },
-    getRowId: (row) => row.id.toString(),
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-  })
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (active && over && active.id !== over.id) {
-      setData((data) => {
-        const oldIndex = dataIds.indexOf(active.id)
-        const newIndex = dataIds.indexOf(over.id)
-        return arrayMove(data, oldIndex, newIndex)
-      })
+  // Auto-open details if only one result is found during a search
+  useEffect(() => {
+    if (status === "succeeded" && orders.length === 1 && filters?.search) {
+      setSelectedOrder(orders[0]);
     }
+  }, [status, orders, filters?.search, lastScanTime]);
+
+  if (status === "loading") {
+    return <div className="text-center p-4">جاري التحميل...</div>;
+  }
+
+  if (status === "failed") {
+    return <div className="text-center text-red-500 p-4">خطأ: {error}</div>;
   }
 
   return (
-    <div className="w-full flex flex-col gap-6">
-      <div className="flex items-center justify-between px-4 lg:px-6">
-        <div className="flex items-center gap-2">
-          <CreateOrderDialog />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <IconLayoutColumns />
-                <span className="hidden lg:inline">Customize Columns</span>
-                <span className="lg:hidden">Columns</span>
-                <IconChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+    <>
+      <div className="mb-4 flex justify-end">
+        <Button onClick={() => exportOrders(orders)} variant="outline" size="sm">
+          <Download className="h-4 w-4 mr-2" />
+          تصدير CSV
+        </Button>
       </div>
-      
-      <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
-        <div className="overflow-hidden rounded-lg border">
-          <DndContext
-            collisionDetection={closestCenter}
-            modifiers={[restrictToVerticalAxis]}
-            onDragEnd={handleDragEnd}
-            sensors={sensors}
-            id={sortableId}
-          >
-            <Table>
-              <TableHeader className="bg-muted sticky top-0 z-10">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => {
-                      return (
-                        <TableHead key={header.id} colSpan={header.colSpan}>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </TableHead>
-                      )
-                    })}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody className="**:data-[slot=table-cell]:first:w-8">
-                {table.getRowModel().rows?.length ? (
-                  <SortableContext
-                    items={dataIds}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {table.getRowModel().rows.map((row) => (
-                      <DraggableRow key={row.id} row={row} />
-                    ))}
-                  </SortableContext>
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
-                      No results.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </DndContext>
-        </div>
-        <div className="flex items-center justify-between px-4">
-          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
-          </div>
-          <div className="flex w-full items-center gap-8 lg:w-fit">
-            <div className="hidden items-center gap-2 lg:flex">
-              <Label htmlFor="rows-per-page" className="text-sm font-medium">
-                Rows per page
-              </Label>
-              <Select
-                value={`${table.getState().pagination.pageSize}`}
-                onValueChange={(value) => {
-                  table.setPageSize(Number(value))
-                }}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-right">رقم التتبع</TableHead>
+              <TableHead className="text-right">اسم الطلب</TableHead>
+              <TableHead className="text-right">العميل</TableHead>
+              <TableHead className="text-right">السعر (USD)</TableHead>
+              <TableHead className="text-right">نوع الشحن</TableHead>
+              <TableHead className="text-right">تكلفة الشحن</TableHead>
+              <TableHead className="text-right">الحالة</TableHead>
+              <TableHead className="text-right">إجراءات</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {orders.map((order) => (
+              <TableRow
+                key={order.id}
+                onClick={() => setSelectedOrder(order)}
+                className="cursor-pointer hover:bg-muted/50"
               >
-                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                  <SelectValue
-                    placeholder={table.getState().pagination.pageSize}
-                  />
-                </SelectTrigger>
-                <SelectContent side="top">
-                  {[10, 20, 30, 40, 50].map((pageSize) => (
-                    <SelectItem key={pageSize} value={`${pageSize}`}>
-                      {pageSize}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
-            </div>
-            <div className="ml-auto flex items-center gap-2 lg:ml-0">
-              <Button
-                variant="outline"
-                className="hidden h-8 w-8 p-0 lg:flex"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <span className="sr-only">Go to first page</span>
-                <IconChevronsLeft />
-              </Button>
-              <Button
-                variant="outline"
-                className="size-8"
-                size="icon"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <span className="sr-only">Go to previous page</span>
-                <IconChevronLeft />
-              </Button>
-              <Button
-                variant="outline"
-                className="size-8"
-                size="icon"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                <span className="sr-only">Go to next page</span>
-                <IconChevronRight />
-              </Button>
-              <Button
-                variant="outline"
-                className="hidden size-8 lg:flex"
-                size="icon"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-              >
-                <span className="sr-only">Go to last page</span>
-                <IconChevronsRight />
-              </Button>
-            </div>
-          </div>
-        </div>
+                <TableCell className="font-medium font-mono">
+                  {order.trackingNumber}
+                </TableCell>
+                <TableCell>{order.name}</TableCell>
+                <TableCell>{order.customer?.user?.name || "-"}</TableCell>
+                <TableCell>${order.usdPrice}</TableCell>
+                <TableCell>{order.shippingRate?.name || "-"}</TableCell>
+                <TableCell>{order.shippingCost ? `$${order.shippingCost}` : "-"}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">
+                    {statusMap[order.status] || order.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <ChangeStatusDialog order={order} />
+                </TableCell>
+              </TableRow>
+            ))}
+            {orders.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center h-24">
+                  لا يوجد طلبات
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
-    </div>
-  )
+
+      <OrderDetailsDrawer 
+        order={selectedOrder} 
+        open={!!selectedOrder} 
+        onOpenChange={(open) => !open && setSelectedOrder(null)} 
+        onUpdate={() => dispatch(loadOrders(filters))}
+      />
+    </>
+  );
 }
+
+

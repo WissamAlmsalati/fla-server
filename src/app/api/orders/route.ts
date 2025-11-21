@@ -16,6 +16,45 @@ export async function GET(request: NextRequest) {
       where.customerId = user.customerId;
     }
 
+    if (query.search) {
+      // First, try to find an exact match for tracking number
+      const exactMatch = await prisma.order.findUnique({
+        where: { trackingNumber: query.search },
+        include: {
+          customer: {
+            include: {
+              user: true,
+            },
+          },
+          shippingRate: true,
+        },
+      });
+
+      if (exactMatch) {
+        // If exact match found, return only that (respecting user permissions)
+        if (user.role !== "Customer" || exactMatch.customerId === user.customerId) {
+           return NextResponse.json({
+            data: [exactMatch],
+            meta: parsePaginationMeta([exactMatch], query.limit),
+          });
+        }
+      }
+
+      where.OR = [
+        { trackingNumber: { contains: query.search, mode: "insensitive" } },
+        { name: { contains: query.search, mode: "insensitive" } },
+        {
+          customer: {
+            OR: [
+              { name: { contains: query.search, mode: "insensitive" } },
+              { code: { contains: query.search, mode: "insensitive" } },
+              { user: { name: { contains: query.search, mode: "insensitive" } } },
+            ],
+          },
+        },
+      ];
+    }
+
     const orders = await prisma.order.findMany({
       where: {
         ...where,
@@ -25,7 +64,14 @@ export async function GET(request: NextRequest) {
       take: query.limit,
       cursor: query.cursor ? { id: Number(query.cursor) } : undefined,
       orderBy: { id: "desc" },
-      include: { customer: true },
+      include: {
+        customer: {
+          include: {
+            user: true,
+          },
+        },
+        shippingRate: true,
+      },
     });
 
     return NextResponse.json({
@@ -40,7 +86,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
-    requireRole(user.role, ["Admin", "PurchaseOfficer"]);
+    requireRole(user.role, ["ADMIN", "PURCHASE_OFFICER"]);
     const body = createOrderSchema.parse(await request.json());
     const order = await prisma.order.create({
       data: {

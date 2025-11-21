@@ -19,6 +19,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { Download } from "lucide-react";
+import { exportToCSV } from "@/lib/exportToCSV";
 
 const roleMap: Record<string, string> = {
   ADMIN: "مدير النظام",
@@ -34,6 +36,27 @@ const roleColorMap: Record<string, "default" | "secondary" | "destructive" | "ou
   CHINA_WAREHOUSE: "secondary",
   LIBYA_WAREHOUSE: "secondary",
   CUSTOMER: "outline",
+};
+
+const exportUsers = (users: User[]) => {
+  const columnMappings = {
+    name: "الاسم",
+    email: "البريد الإلكتروني",
+    mobile: "رقم الهاتف",
+    "customer.code": "كود الشحن",
+    role: "الدور",
+    createdAt: "تاريخ التسجيل"
+  };
+  
+  // Transform data for export
+  const dataToExport = users.map(user => ({
+    ...user,
+    role: roleMap[user.role] || user.role,
+    createdAt: format(new Date(user.createdAt), "dd MMMM yyyy", { locale: ar }),
+    mobile: user.mobile || "-"
+  }));
+  
+  exportToCSV(dataToExport, columnMappings, "users");
 };
 
 export function UsersTable() {
@@ -67,7 +90,14 @@ export function UsersTable() {
   }
 
   return (
-    <div className="rounded-md border">
+    <>
+      <div className="mb-4 flex justify-end">
+        <Button onClick={() => exportUsers(users)} variant="outline" size="sm">
+          <Download className="h-4 w-4 mr-2" />
+          تصدير CSV
+        </Button>
+      </div>
+      <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -132,5 +162,6 @@ export function UsersTable() {
         </TableBody>
       </Table>
     </div>
+    </>
   );
 }

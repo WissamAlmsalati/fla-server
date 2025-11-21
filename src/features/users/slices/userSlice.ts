@@ -12,7 +12,11 @@ export type User = {
   role: Role;
   createdAt: string;
   customer?: {
+    id: number;
     code: string;
+    balanceUSD: number;
+    balanceLYD: number;
+    balanceCNY: number;
   };
 };
 
@@ -58,7 +62,7 @@ export const createUser = createAsyncThunk("users/createUser", async (data: Part
   return response.json();
 });
 
-export const updateUser = createAsyncThunk("users/updateUser", async ({ id, data }: { id: number; data: Partial<User> & { password?: string } }) => {
+export const updateUser = createAsyncThunk("users/updateUser", async ({ id, data }: { id: number; data: Partial<User> & { password?: string; customerCode?: string } }) => {
   const token = localStorage.getItem("token");
   const response = await fetch(`/api/users/${id}`, {
     method: "PUT",

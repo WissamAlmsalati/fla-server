@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const refreshToken = signRefreshToken(nextPayload);
 
     const response = NextResponse.json({ message: "Rotated tokens" });
-    response.cookies.set("access_token", accessToken, { httpOnly: true, path: "/" });
+    response.cookies.set("access_token", accessToken, { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 });
     response.cookies.set("refresh_token", refreshToken, { httpOnly: true, path: "/api/auth/refresh" });
     return response;
   } catch (error) {

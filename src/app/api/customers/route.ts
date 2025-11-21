@@ -60,11 +60,32 @@ export async function POST(request: Request) {
     const body = await request.json();
     const payload = createCustomerSchema.parse(body);
 
+    // Generate sequential code: KO219-FLL{N}
+    const lastCustomer = await prisma.customer.findFirst({
+      where: {
+        code: {
+          startsWith: "KO219-FLL"
+        }
+      },
+      orderBy: {
+        id: "desc"
+      }
+    });
+
+    let nextCode = "KO219-FLL1";
+    if (lastCustomer) {
+      const match = lastCustomer.code.match(/KO219-FLL(\d+)/);
+      if (match) {
+        const lastNumber = parseInt(match[1]);
+        nextCode = `KO219-FLL${lastNumber + 1}`;
+      }
+    }
+
     const customer = await prisma.customer.create({
       data: {
         name: payload.name,
         userId: payload.userId ?? null,
-        code: `CUST-${Date.now()}`, // Generate a temporary code
+        code: nextCode,
       },
     });
 

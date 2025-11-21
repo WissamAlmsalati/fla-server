@@ -32,6 +32,22 @@ enum ShipmentStatus {
   delivered
 }
 
+enum ShippingType {
+  AIR
+  SEA
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+}
+
+enum Currency {
+  USD
+  LYD
+  CNY
+}
+
 model User {
   id            Int             @id @default(autoincrement())
   name          String
@@ -49,12 +65,16 @@ model User {
 }
 
 model Customer {
-  id     Int     @id @default(autoincrement())
-  name   String
-  code   String  @unique
-  orders Order[]
-  user   User?   @relation(fields: [userId], references: [id])
-  userId Int?    @unique
+  id           Int           @id @default(autoincrement())
+  name         String
+  code         String        @unique
+  balanceUSD   Float         @default(0)
+  balanceLYD   Float         @default(0)
+  balanceCNY   Float         @default(0)
+  orders       Order[]
+  transactions Transaction[]
+  user         User?         @relation(fields: [userId], references: [id])
+  userId       Int?          @unique
 }
 
 model Order {
@@ -74,6 +94,9 @@ model Order {
   messages       OrderMessage[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+  shippingRateId Int?
+  shippingRate   ShippingRate? @relation(fields: [shippingRateId], references: [id])
+  shippingCost   Float?
 }
 
 model OrderLog {
@@ -121,4 +144,28 @@ model OrderMessage {
   createdAt DateTime @default(now())
   order     Order    @relation(fields: [orderId], references: [id])
   author    User     @relation(fields: [authorId], references: [id])
+}
+
+model ShippingRate {
+  id        Int          @id @default(autoincrement())
+  type      ShippingType
+  name      String
+  price     Float
+  orders    Order[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Transaction {
+  id            Int             @id @default(autoincrement())
+  customerId    Int
+  customer      Customer        @relation(fields: [customerId], references: [id])
+  type          TransactionType
+  amount        Float
+  currency      Currency
+  balanceBefore Float
+  balanceAfter  Float
+  notes         String?
+  createdBy     Int?
+  createdAt     DateTime        @default(now())
 }

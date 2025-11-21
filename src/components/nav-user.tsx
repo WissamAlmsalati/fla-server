@@ -1,5 +1,8 @@
 "use client"
 
+import { useRouter } from "next/navigation"
+import { useReduxDispatch } from "@/redux/provider"
+import { clearUser } from "@/features/auth/slices/authSlice"
 import {
   IconCreditCard,
   IconDotsVertical,
@@ -38,7 +41,19 @@ export function NavUser({
     avatar: string
   }
 }) {
+  const router = useRouter()
+  const dispatch = useReduxDispatch()
   const { isMobile } = useSidebar()
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" })
+      dispatch(clearUser())
+      router.push("/login")
+    } catch (error) {
+      console.error("Logout failed", error)
+    }
+  }
 
   return (
     <SidebarMenu>
@@ -98,7 +113,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <IconLogout />
               Log out
             </DropdownMenuItem>

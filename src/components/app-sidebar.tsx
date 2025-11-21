@@ -51,12 +51,39 @@ const data = {
       icon: Truck,
     },
   ],
-  management: [
+  shipmentManagement: [
     {
-      name: "المخازن",
-      url: "/warehouses",
+      name: "تم الشراء",
+      url: "/warehouses/purchased",
+      icon: Package,
+    },
+    {
+      name: "مخزن الصين",
+      url: "/warehouses/china",
       icon: Warehouse,
     },
+    {
+      name: "جاري الشحن لليبيا",
+      url: "/warehouses/shipping",
+      icon: Truck,
+    },
+    {
+      name: "مخزن ليبيا",
+      url: "/warehouses/libya",
+      icon: Warehouse,
+    },
+    {
+      name: "جاهز للاستلام",
+      url: "/warehouses/ready",
+      icon: Package,
+    },
+    {
+      name: "تم التسليم",
+      url: "/warehouses/delivered",
+      icon: Package,
+    },
+  ],
+  userManagement: [
     {
       name: "العملاء",
       url: "/customers",
@@ -66,6 +93,11 @@ const data = {
       name: "المستخدمين",
       url: "/users",
       icon: Settings,
+    },
+    {
+      name: "إدارة الشحن",
+      url: "/shipping",
+      icon: Truck,
     },
   ],
   navSecondary: [
@@ -102,7 +134,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.management} />
+        <NavDocuments items={data.shipmentManagement} title="إدارة الشحنات" />
+        <NavDocuments items={data.userManagement} title="إدارة المستخدمين" />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

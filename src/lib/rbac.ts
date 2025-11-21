@@ -1,9 +1,9 @@
 export const roleHierarchy = {
-  Admin: 5,
-  PurchaseOfficer: 4,
-  ChinaWarehouse: 3,
-  LibyaWarehouse: 3,
-  Customer: 1,
+  ADMIN: 5,
+  PURCHASE_OFFICER: 4,
+  CHINA_WAREHOUSE: 3,
+  LIBYA_WAREHOUSE: 3,
+  CUSTOMER: 1,
 } as const;
 
 export function hasRole(userRole: string, allowedRoles: string[]) {

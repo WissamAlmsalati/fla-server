@@ -7,14 +7,28 @@ export type Order = {
   name: string;
   status: string;
   usdPrice: number;
+  cnyPrice?: number;
   customerId: number;
   weight?: number;
-  productUrl?: string;
-  notes?: string;
-  customer?: {
+  shippingRateId?: number;
+  shippingCost?: number;
+  shippingRate?: {
     id: number;
     name: string;
+    type: string;
+    price: number;
+  };
+  productUrl?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  customer?: {
+    id: number;
     code: string;
+    user: {
+      id: number;
+      name: string;
+    };
   };
 };
 

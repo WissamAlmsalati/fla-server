@@ -20,6 +20,7 @@ const updateUserSchema = z.object({
   mobile: z.string().optional(),
   photoUrl: z.string().optional(),
   passportUrl: z.string().optional(),
+  customerCode: z.string().optional(),
 });
 
 export async function GET(
@@ -51,7 +52,11 @@ export async function GET(
         createdAt: true,
         customer: {
           select: {
-            code: true
+            id: true,
+            code: true,
+            balanceUSD: true,
+            balanceLYD: true,
+            balanceCNY: true
           }
         }
       },
@@ -138,6 +143,16 @@ export async function PUT(
               userId: user.id,
               code: shippingCode,
             },
+          });
+        }
+      }
+
+      if (payload.customerCode) {
+        const customer = await tx.customer.findUnique({ where: { userId: userId } });
+        if (customer) {
+          await tx.customer.update({
+            where: { id: customer.id },
+            data: { code: payload.customerCode }
           });
         }
       }

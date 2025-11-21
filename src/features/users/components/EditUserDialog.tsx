@@ -43,6 +43,7 @@ export function EditUserDialog({ user, onSuccess }: EditUserDialogProps) {
     mobile: user.mobile || "",
     photoUrl: user.photoUrl || "",
     passportUrl: user.passportUrl || "",
+    customerCode: user.customer?.code || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -164,6 +165,19 @@ export function EditUserDialog({ user, onSuccess }: EditUserDialogProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            {formData.role === "CUSTOMER" && (
+              <div className="grid gap-2">
+                <Label htmlFor="customerCode" className="text-right">
+                  كود الشحن
+                </Label>
+                <Input
+                  id="customerCode"
+                  value={formData.customerCode}
+                  onChange={(e) => setFormData({ ...formData, customerCode: e.target.value })}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="submit" disabled={loading}>

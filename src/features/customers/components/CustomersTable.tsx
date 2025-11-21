@@ -15,8 +15,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { exportToCSV } from "@/lib/exportToCSV";
+
+const exportCustomers = (customers: any[]) => {
+  const columnMappings = {
+    "user.name": "الاسم",
+    "user.email": "البريد الإلكتروني",
+    "user.mobile": "رقم الهاتف",
+    code: "كود الشحن"
+  };
+  
+  exportToCSV(customers, columnMappings, "customers");
+};
 
 export function CustomersTable() {
+  // Force refresh
   const router = useRouter();
   const dispatch = useReduxDispatch();
   const { list: customers, status, error } = useReduxSelector((state) => state.customers);
@@ -36,7 +51,14 @@ export function CustomersTable() {
   }
 
   return (
-    <div className="rounded-md border">
+    <>
+      <div className="mb-4 flex justify-end">
+        <Button onClick={() => exportCustomers(customers)} variant="outline" size="sm">
+          <Download className="h-4 w-4 mr-2" />
+          تصدير CSV
+        </Button>
+      </div>
+      <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -82,5 +104,6 @@ export function CustomersTable() {
         </TableBody>
       </Table>
     </div>
+    </>
   );
 }

@@ -74,9 +74,26 @@ export async function POST(request: Request) {
     // Generate shipping code if role is CUSTOMER
     let shippingCode = undefined;
     if (payload.role === Role.CUSTOMER) {
-      // Simple generation: LY- + random 4 digits + timestamp suffix to ensure uniqueness
-      const random = Math.floor(1000 + Math.random() * 9000);
-      shippingCode = `LY-${random}`;
+      const lastCustomer = await prisma.customer.findFirst({
+        where: {
+          code: {
+            startsWith: "KO219-FLL"
+          }
+        },
+        orderBy: {
+          id: "desc"
+        }
+      });
+
+      let nextCode = "KO219-FLL1";
+      if (lastCustomer) {
+        const match = lastCustomer.code.match(/KO219-FLL(\d+)/);
+        if (match) {
+          const lastNumber = parseInt(match[1]);
+          nextCode = `KO219-FLL${lastNumber + 1}`;
+        }
+      }
+      shippingCode = nextCode;
     }
 
     const user = await prisma.$transaction(async (tx) => {

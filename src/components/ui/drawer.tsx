@@ -64,13 +64,15 @@ function DrawerContent({
           className
         )}
         {...props}
-      >
+        >
         <div className="bg-muted mx-auto mt-4 hidden h-2 w-[100px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>
   )
 }
+
+// DrawerBody removed: using simple div wrappers in components to keep core library small
 
 function DrawerHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (

@@ -5,6 +5,9 @@ export type Customer = {
   name: string;
   code: string;
   userId: number | null;
+  balanceUSD: number;
+  balanceLYD: number;
+  balanceCNY: number;
   user?: {
     id: number;
     name: string;
@@ -62,6 +65,23 @@ export const createCustomer = createAsyncThunk("customers/createCustomer", async
   return response.json();
 });
 
+export const updateCustomer = createAsyncThunk("customers/updateCustomer", async (data: { id: number; balanceUSD?: number; balanceLYD?: number; balanceCNY?: number }) => {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`/api/customers/${data.id}`, {
+    method: "PATCH",
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to update customer");
+  }
+  return response.json();
+});
+
 const customerSlice = createSlice({
   name: "customers",
   initialState,
@@ -81,6 +101,12 @@ const customerSlice = createSlice({
       })
       .addCase(createCustomer.fulfilled, (state, action) => {
         state.list.unshift(action.payload);
+      })
+      .addCase(updateCustomer.fulfilled, (state, action) => {
+        const index = state.list.findIndex(c => c.id === action.payload.id);
+        if (index !== -1) {
+          state.list[index] = action.payload;
+        }
       });
   },
 });

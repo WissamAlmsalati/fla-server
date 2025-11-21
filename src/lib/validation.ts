@@ -3,6 +3,7 @@ import { z } from "zod";
 export const orderFiltersSchema = z.object({
   status: z.string().optional(),
   customerId: z.coerce.number().optional(),
+  search: z.string().optional(),
   limit: z.coerce.number().min(10).max(50).default(20),
   cursor: z.string().optional(),
 });
@@ -27,4 +28,5 @@ export const updateOrderSchema = z.object({
   cny_price: z.number().optional(),
   product_url: z.string().url().optional(),
   notes: z.string().optional(),
+  shippingRateId: z.number().optional(),
 });

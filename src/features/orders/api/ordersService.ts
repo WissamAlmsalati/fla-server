@@ -57,6 +57,7 @@ export async function updateOrder(id: number, payload: {
   cny_price?: number;
   product_url?: string;
   notes?: string;
+  shippingRateId?: number;
 }) {
   const token = localStorage.getItem("token");
   const response = await fetch(`/api/orders/${id}`, {
@@ -66,6 +67,16 @@ export async function updateOrder(id: number, payload: {
       "Authorization": `Bearer ${token}`
     },
     body: JSON.stringify(payload),
+  });
+  return handleResponse<unknown>(response);
+}
+
+export async function fetchOrder(id: number) {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`/api/orders/${id}`, {
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
   });
   return handleResponse<unknown>(response);
 }

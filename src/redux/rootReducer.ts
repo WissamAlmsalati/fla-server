@@ -6,6 +6,8 @@ import messageReducer from "@/features/messaging/slices/messageSlice";
 import warehouseReducer from "@/features/warehouses/slices/warehouseSlice";
 import userReducer from "@/features/users/slices/userSlice";
 import customerReducer from "@/features/customers/slices/customerSlice";
+import shippingReducer from "@/features/shipping/slices/shippingSlice";
+import transactionReducer from "@/features/transactions/slices/transactionSlice";
 
 export const rootReducer = combineReducers({
   auth: authReducer,
@@ -15,4 +17,6 @@ export const rootReducer = combineReducers({
   warehouses: warehouseReducer,
   users: userReducer,
   customers: customerReducer,
+  shipping: shippingReducer,
+  transactions: transactionReducer,
 });
