@@ -37,7 +37,7 @@ const data = {
   navMain: [
     {
       title: "لوحة التحكم",
-      url: "/orders",
+      url: "/dashboard",
       icon: LayoutDashboard,
     },
     {

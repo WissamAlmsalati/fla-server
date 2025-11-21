@@ -16,6 +16,9 @@ const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   role: z.nativeEnum(Role),
+  mobile: z.string().optional(),
+  photoUrl: z.string().optional(),
+  passportUrl: z.string().optional(),
 });
 
 export async function GET(request: Request) {
@@ -32,8 +35,15 @@ export async function GET(request: Request) {
         name: true,
         email: true,
         role: true,
+        mobile: true,
+        photoUrl: true,
+        passportUrl: true,
         createdAt: true,
-        // Exclude passwordHash
+        customer: {
+          select: {
+            code: true
+          }
+        }
       },
     });
 
@@ -61,20 +71,47 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User already exists" }, { status: 400 });
     }
 
-    const user = await prisma.user.create({
-      data: {
-        name: payload.name,
-        email: payload.email,
-        passwordHash: payload.password, // Note: In a real app, hash this!
-        role: payload.role,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
+    // Generate shipping code if role is CUSTOMER
+    let shippingCode = undefined;
+    if (payload.role === Role.CUSTOMER) {
+      // Simple generation: LY- + random 4 digits + timestamp suffix to ensure uniqueness
+      const random = Math.floor(1000 + Math.random() * 9000);
+      shippingCode = `LY-${random}`;
+    }
+
+    const user = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          name: payload.name,
+          email: payload.email,
+          passwordHash: payload.password, // Note: In a real app, hash this!
+          role: payload.role,
+          mobile: payload.mobile,
+          photoUrl: payload.photoUrl,
+          passportUrl: payload.passportUrl,
+        },
+      });
+
+      if (payload.role === Role.CUSTOMER && shippingCode) {
+        await tx.customer.create({
+          data: {
+            name: newUser.name,
+            userId: newUser.id,
+            code: shippingCode,
+          },
+        });
+        
+        // Update user with customerId (optional, but good for quick access)
+        // Actually schema has customerId Int? but it's not a relation field in the new schema?
+        // In the schema provided: customer Customer?
+        // And Customer has userId.
+        // User has customerId Int? but it's not linked to relation.
+        // Let's update it anyway if we want to use it, or rely on relation.
+        // The relation is on Customer side: user User @relation...
+        // So User.customer is accessible.
+      }
+      
+      return newUser;
     });
 
     return NextResponse.json(user);

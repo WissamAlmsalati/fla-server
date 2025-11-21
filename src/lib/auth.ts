@@ -12,7 +12,7 @@ export async function requireAuth(request: Request) {
   const token = authHeader?.split(" ")[1];
   if (!token) throw new Error("Missing authorization token");
 
-  const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as JWTPayload;
+  const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as unknown as JWTPayload;
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
   if (!user || user.tokenVersion !== payload.tokenVersion) {
     throw new Error("Invalid token");

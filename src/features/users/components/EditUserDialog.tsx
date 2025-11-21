@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useReduxDispatch } from "@/redux/provider";
-import { fetchCustomers } from "../slices/customerSlice";
-import { createUser, Role } from "../../users/slices/userSlice";
+import { updateUser, Role, User } from "../slices/userSlice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,48 +15,49 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FileUpload } from "@/components/ui/file-upload";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Pencil } from "lucide-react";
 
-export function AddCustomerDialog() {
+interface EditUserDialogProps {
+  user: User;
+  onSuccess?: () => void;
+}
+
+export function EditUserDialog({ user, onSuccess }: EditUserDialogProps) {
   const dispatch = useReduxDispatch();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
+    name: user.name,
+    email: user.email,
     password: "",
-    mobile: "",
-    photoUrl: "",
-    passportUrl: "",
+    role: user.role,
+    mobile: user.mobile || "",
+    photoUrl: user.photoUrl || "",
+    passportUrl: user.passportUrl || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Create user with role CUSTOMER
-      await dispatch(createUser({
-        ...formData,
-        role: "CUSTOMER" as Role,
-      })).unwrap();
+      const updateData: any = { ...formData };
+      if (!updateData.password) delete updateData.password;
       
-      // Refresh customers list
-      dispatch(fetchCustomers());
-      
-      toast.success("تم إنشاء العميل بنجاح");
+      await dispatch(updateUser({ id: user.id, data: updateData })).unwrap();
+      toast.success("تم تحديث المستخدم بنجاح");
       setOpen(false);
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        mobile: "",
-        photoUrl: "",
-        passportUrl: "",
-      });
+      if (onSuccess) onSuccess();
     } catch (error: any) {
-      toast.error(error.message || "فشل إنشاء العميل");
+      toast.error(error.message || "فشل تحديث المستخدم");
     } finally {
       setLoading(false);
     }
@@ -66,16 +66,15 @@ export function AddCustomerDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          إضافة عميل
+        <Button variant="ghost" size="icon">
+          <Pencil className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]" dir="rtl">
         <DialogHeader>
-          <DialogTitle>إضافة عميل جديد</DialogTitle>
+          <DialogTitle>تعديل بيانات المستخدم</DialogTitle>
           <DialogDescription>
-            أدخل بيانات العميل الجديد هنا. سيتم إنشاء حساب مستخدم له تلقائياً.
+            قم بتعديل بيانات المستخدم هنا. انقر على حفظ عند الانتهاء.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -120,14 +119,13 @@ export function AddCustomerDialog() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password" className="text-right">
-                  كلمة المرور
+                  كلمة المرور (اتركه فارغاً إذا لم ترد التغيير)
                 </Label>
                 <Input
                   id="password"
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
                   minLength={6}
                 />
               </div>
@@ -144,6 +142,27 @@ export function AddCustomerDialog() {
                 value={formData.passportUrl}
                 onChange={(url) => setFormData({ ...formData, passportUrl: url })}
               />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="role" className="text-right">
+                الدور
+              </Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value: Role) => setFormData({ ...formData, role: value })}
+              >
+                <SelectTrigger className="col-span-3" dir="rtl">
+                  <SelectValue placeholder="اختر الدور" />
+                </SelectTrigger>
+                <SelectContent dir="rtl">
+                  <SelectItem value="ADMIN">مدير النظام</SelectItem>
+                  <SelectItem value="PURCHASE_OFFICER">مسؤول مشتريات</SelectItem>
+                  <SelectItem value="CHINA_WAREHOUSE">مخزن الصين</SelectItem>
+                  <SelectItem value="LIBYA_WAREHOUSE">مخزن ليبيا</SelectItem>
+                  <SelectItem value="CUSTOMER">عميل</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

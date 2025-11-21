@@ -6,7 +6,7 @@ export default async function HomePage() {
   const token = cookieStore.get("access_token");
 
   if (token) {
-    redirect("/orders");
+    redirect("/dashboard");
   } else {
     redirect("/login");
   }

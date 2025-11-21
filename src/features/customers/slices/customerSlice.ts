@@ -3,9 +3,17 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 export type Customer = {
   id: number;
   name: string;
+  code: string;
   userId: number | null;
   user?: {
+    id: number;
+    name: string;
     email: string;
+    mobile?: string;
+    photoUrl?: string;
+    passportUrl?: string;
+    role: string;
+    createdAt: string;
   };
   _count?: {
     orders: number;

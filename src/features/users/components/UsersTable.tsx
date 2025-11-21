@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
-import { fetchUsers, User } from "../slices/userSlice";
+import { fetchUsers, deleteUser, User } from "../slices/userSlice";
+import { EditUserDialog } from "./EditUserDialog";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -32,8 +37,20 @@ const roleColorMap: Record<string, "default" | "secondary" | "destructive" | "ou
 };
 
 export function UsersTable() {
+  const router = useRouter();
   const dispatch = useReduxDispatch();
   const { list: users, status, error } = useReduxSelector((state) => state.users);
+
+  const handleDelete = async (id: number) => {
+    if (confirm("هل أنت متأكد من حذف هذا المستخدم؟")) {
+      try {
+        await dispatch(deleteUser(id)).unwrap();
+        toast.success("تم حذف المستخدم بنجاح");
+      } catch (error: any) {
+        toast.error(error.message || "فشل حذف المستخدم");
+      }
+    }
+  };
 
   useEffect(() => {
     if (status === "idle") {
@@ -56,15 +73,32 @@ export function UsersTable() {
           <TableRow>
             <TableHead className="text-right">الاسم</TableHead>
             <TableHead className="text-right">البريد الإلكتروني</TableHead>
+            <TableHead className="text-right">رقم الهاتف</TableHead>
+            <TableHead className="text-right">كود الشحن</TableHead>
             <TableHead className="text-right">الدور</TableHead>
             <TableHead className="text-right">تاريخ التسجيل</TableHead>
+            <TableHead className="text-right">إجراءات</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {users.map((user) => (
-            <TableRow key={user.id}>
+            <TableRow 
+              key={user.id} 
+              className="cursor-pointer hover:bg-muted/50"
+              onClick={() => router.push(`/users/${user.id}`)}
+            >
               <TableCell className="font-medium">{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>
+              <TableCell>{user.mobile || "-"}</TableCell>
+              <TableCell>
+                {user.role === "CUSTOMER" && user.customer?.code ? (
+                  <Badge variant="outline" className="font-mono">
+                    {user.customer.code}
+                  </Badge>
+                ) : (
+                  "-"
+                )}
+              </TableCell>
               <TableCell>
                 <Badge variant={roleColorMap[user.role] || "outline"}>
                   {roleMap[user.role] || user.role}
@@ -73,11 +107,24 @@ export function UsersTable() {
               <TableCell>
                 {format(new Date(user.createdAt), "dd MMMM yyyy", { locale: ar })}
               </TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-2">
+                  <EditUserDialog user={user} />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive/90"
+                    onClick={() => handleDelete(user.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
             </TableRow>
           ))}
           {users.length === 0 && (
             <TableRow>
-              <TableCell colSpan={4} className="text-center h-24">
+              <TableCell colSpan={7} className="text-center h-24">
                 لا يوجد مستخدمين
               </TableCell>
             </TableRow>

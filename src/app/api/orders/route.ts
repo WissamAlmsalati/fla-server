@@ -1,20 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { orderFiltersSchema, createOrderSchema } from "@/lib/validation";
 import { parsePaginationMeta } from "@/lib/pagination";
 import { requireAuth } from "@/lib/auth";
 import { requireRole } from "@/lib/rbac";
+import { OrderStatus } from "@prisma/client";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     const query = orderFiltersSchema.parse(Object.fromEntries(request.nextUrl.searchParams));
-    const where = user.role === "Customer" ? { customerId: user.customerId } : {};
+    
+    const where: any = {};
+    if (user.role === "Customer" && user.customerId) {
+      where.customerId = user.customerId;
+    }
 
     const orders = await prisma.order.findMany({
       where: {
         ...where,
-        ...(query.status && { status: query.status }),
+        ...(query.status && { status: query.status as OrderStatus }),
         ...(query.customerId && { customerId: query.customerId }),
       },
       take: query.limit,

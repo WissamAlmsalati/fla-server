@@ -47,3 +47,25 @@ export async function createOrder(payload: {
   });
   return handleResponse<{ data: unknown }>(response);
 }
+
+export async function updateOrder(id: number, payload: {
+  status?: string;
+  weight?: number;
+  tracking_number?: string;
+  name?: string;
+  usd_price?: number;
+  cny_price?: number;
+  product_url?: string;
+  notes?: string;
+}) {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`/api/orders/${id}`, {
+    method: "PATCH",
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse<unknown>(response);
+}

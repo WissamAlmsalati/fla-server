@@ -53,6 +53,7 @@ async function main() {
         data: {
           name: c.name,
           userId: user.id,
+          code: `LY-${Math.floor(1000 + Math.random() * 9000)}`,
         },
       });
     }
@@ -63,7 +64,10 @@ async function main() {
   const standaloneExists = await prisma.customer.findFirst({ where: { name: standaloneName } });
   if (!standaloneExists) {
     await prisma.customer.create({
-      data: { name: standaloneName },
+      data: { 
+        name: standaloneName,
+        code: `LY-${Math.floor(1000 + Math.random() * 9000)}`,
+      },
     });
   }
 }

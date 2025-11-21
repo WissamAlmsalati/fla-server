@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
 import { fetchCustomers } from "../slices/customerSlice";
+import { EditUserDialog } from "../../users/components/EditUserDialog";
+import { User } from "../../users/slices/userSlice";
 import {
   Table,
   TableBody,
@@ -14,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export function CustomersTable() {
+  const router = useRouter();
   const dispatch = useReduxDispatch();
   const { list: customers, status, error } = useReduxSelector((state) => state.customers);
 
@@ -37,25 +41,40 @@ export function CustomersTable() {
         <TableHeader>
           <TableRow>
             <TableHead className="text-right">الاسم</TableHead>
-            <TableHead className="text-right">المستخدم المرتبط</TableHead>
-            <TableHead className="text-right">عدد الطلبات</TableHead>
+            <TableHead className="text-right">البريد الإلكتروني</TableHead>
+            <TableHead className="text-right">رقم الهاتف</TableHead>
+            <TableHead className="text-right">كود الشحن</TableHead>
+            <TableHead className="text-right">إجراءات</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {customers.map((customer) => (
-            <TableRow key={customer.id}>
-              <TableCell className="font-medium">{customer.name}</TableCell>
-              <TableCell>{customer.user?.email || "-"}</TableCell>
-              <TableCell>
-                <Badge variant="secondary">
-                  {customer._count?.orders || 0}
-                </Badge>
-              </TableCell>
-            </TableRow>
-          ))}
+          {customers.map((customer) => {
+            if (!customer.user) return null;
+            return (
+              <TableRow
+                key={customer.id}
+                onClick={() => router.push(`/users/${customer.user!.id}`)}
+                className="cursor-pointer hover:bg-muted/50"
+              >
+                <TableCell className="font-medium">
+                  {customer.user.name}
+                </TableCell>
+                <TableCell>{customer.user.email}</TableCell>
+                <TableCell>{customer.user.mobile || "-"}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="font-mono">
+                    {customer.code}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <EditUserDialog user={customer.user as unknown as User} />
+                </TableCell>
+              </TableRow>
+            );
+          })}
           {customers.length === 0 && (
             <TableRow>
-              <TableCell colSpan={3} className="text-center h-24">
+              <TableCell colSpan={5} className="text-center h-24">
                 لا يوجد عملاء
               </TableCell>
             </TableRow>

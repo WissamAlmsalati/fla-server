@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { verify } from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
 import { signAccessToken, signRefreshToken, JWTPayload } from "@/lib/auth";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const token = request.cookies.get("refresh_token")?.value;
     if (!token) throw new Error("Missing refresh token");
 
-    const payload = verify(token, process.env.REFRESH_TOKEN_SECRET!) as JWTPayload;
+    const payload = verify(token, process.env.REFRESH_TOKEN_SECRET!) as unknown as JWTPayload;
     const user = await prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user || payload.tokenVersion !== user.tokenVersion) {
       throw new Error("Token invalid");

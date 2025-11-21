@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FileUpload } from "@/components/ui/file-upload";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
@@ -34,6 +35,9 @@ export function AddUserDialog() {
     email: "",
     password: "",
     role: "CUSTOMER" as Role,
+    mobile: "",
+    photoUrl: "",
+    passportUrl: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +47,7 @@ export function AddUserDialog() {
       await dispatch(createUser(formData)).unwrap();
       toast.success("تم إنشاء المستخدم بنجاح");
       setOpen(false);
-      setFormData({ name: "", email: "", password: "", role: "CUSTOMER" });
+      setFormData({ name: "", email: "", password: "", role: "CUSTOMER", mobile: "", photoUrl: "", passportUrl: "" });
     } catch (error: any) {
       toast.error(error.message || "فشل إنشاء المستخدم");
     } finally {
@@ -59,7 +63,7 @@ export function AddUserDialog() {
           إضافة مستخدم
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]" dir="rtl">
+      <DialogContent className="sm:max-w-[600px]" dir="rtl">
         <DialogHeader>
           <DialogTitle>إضافة مستخدم جديد</DialogTitle>
           <DialogDescription>
@@ -68,46 +72,73 @@ export function AddUserDialog() {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                الاسم
-              </Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="col-span-3"
-                required
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name" className="text-right">
+                  الاسم
+                </Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="mobile" className="text-right">
+                  رقم الهاتف
+                </Label>
+                <Input
+                  id="mobile"
+                  value={formData.mobile}
+                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="email" className="text-right">
+                  البريد الإلكتروني
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password" className="text-right">
+                  كلمة المرور
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                  minLength={6}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FileUpload
+                label="الصورة الشخصية (اختياري)"
+                value={formData.photoUrl}
+                onChange={(url) => setFormData({ ...formData, photoUrl: url })}
+              />
+              <FileUpload
+                label="صورة الجواز (اختياري)"
+                value={formData.passportUrl}
+                onChange={(url) => setFormData({ ...formData, passportUrl: url })}
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                البريد الإلكتروني
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="password" className="text-right">
-                كلمة المرور
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="col-span-3"
-                required
-                minLength={6}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
+
+            <div className="grid gap-2">
               <Label htmlFor="role" className="text-right">
                 الدور
               </Label>
@@ -115,10 +146,10 @@ export function AddUserDialog() {
                 value={formData.role}
                 onValueChange={(value: Role) => setFormData({ ...formData, role: value })}
               >
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger className="col-span-3" dir="rtl">
                   <SelectValue placeholder="اختر الدور" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent dir="rtl">
                   <SelectItem value="ADMIN">مدير النظام</SelectItem>
                   <SelectItem value="PURCHASE_OFFICER">مسؤول مشتريات</SelectItem>
                   <SelectItem value="CHINA_WAREHOUSE">مخزن الصين</SelectItem>

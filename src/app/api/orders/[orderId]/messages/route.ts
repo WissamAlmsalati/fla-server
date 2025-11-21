@@ -7,11 +7,12 @@ const bodySchema = z.object({
   content: z.string().min(1),
 });
 
-export async function GET(request: Request, { params }: { params: { orderId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ orderId: string }> }) {
   try {
     await requireAuth(request);
+    const { orderId } = await params;
     const messages = await prisma.orderMessage.findMany({
-      where: { orderId: Number(params.orderId) },
+      where: { orderId: Number(orderId) },
       orderBy: { createdAt: "asc" },
       include: { author: true },
     });
@@ -21,14 +22,15 @@ export async function GET(request: Request, { params }: { params: { orderId: str
   }
 }
 
-export async function POST(request: Request, { params }: { params: { orderId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ orderId: string }> }) {
   try {
     const user = await requireAuth(request);
+    const { orderId } = await params;
     const body = bodySchema.parse(await request.json());
     const message = await prisma.orderMessage.create({
       data: {
         content: body.content,
-        orderId: Number(params.orderId),
+        orderId: Number(orderId),
         authorId: user.sub,
       },
     });

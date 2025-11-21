@@ -40,6 +40,9 @@ model User {
   role          Role
   customerId    Int?
   tokenVersion  Int             @default(0)
+  mobile        String?         @unique
+  photoUrl      String?
+  passportUrl   String?
   messages      OrderMessage[]
   createdAt     DateTime        @default(now())
   customer      Customer?
@@ -48,6 +51,7 @@ model User {
 model Customer {
   id     Int     @id @default(autoincrement())
   name   String
+  code   String  @unique
   orders Order[]
   user   User?   @relation(fields: [userId], references: [id])
   userId Int?    @unique

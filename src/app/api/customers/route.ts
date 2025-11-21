@@ -27,7 +27,14 @@ export async function GET(request: Request) {
       include: {
         user: {
           select: {
+            id: true,
+            name: true,
             email: true,
+            mobile: true,
+            photoUrl: true,
+            passportUrl: true,
+            role: true,
+            createdAt: true,
           },
         },
         _count: {
@@ -56,7 +63,8 @@ export async function POST(request: Request) {
     const customer = await prisma.customer.create({
       data: {
         name: payload.name,
-        userId: payload.userId,
+        userId: payload.userId ?? null,
+        code: `CUST-${Date.now()}`, // Generate a temporary code
       },
     });
 

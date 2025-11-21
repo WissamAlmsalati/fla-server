@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { fetchOrders, createOrder } from "@/features/orders/api/ordersService";
+import { fetchOrders, createOrder, updateOrder as updateOrderApi } from "@/features/orders/api/ordersService";
 
 export type Order = {
   id: number;
@@ -8,6 +8,14 @@ export type Order = {
   status: string;
   usdPrice: number;
   customerId: number;
+  weight?: number;
+  productUrl?: string;
+  notes?: string;
+  customer?: {
+    id: number;
+    name: string;
+    code: string;
+  };
 };
 
 type OrdersState = {
@@ -32,6 +40,11 @@ export const addOrder = createAsyncThunk("orders/create", async (payload: Parame
   return response.data as Order;
 });
 
+export const updateOrder = createAsyncThunk("orders/update", async ({ id, data }: { id: number; data: Parameters<typeof updateOrderApi>[1] }) => {
+  const response = await updateOrderApi(id, data);
+  return response as Order;
+});
+
 const orderSlice = createSlice({
   name: "orders",
   initialState,
@@ -48,10 +61,16 @@ const orderSlice = createSlice({
       })
       .addCase(loadOrders.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.error.message ?? "Unable to load orders";
+        state.error = action.error.message || "Failed to load orders";
       })
       .addCase(addOrder.fulfilled, (state, action) => {
         state.list.unshift(action.payload);
+      })
+      .addCase(updateOrder.fulfilled, (state, action) => {
+        const index = state.list.findIndex((o) => o.id === action.payload.id);
+        if (index !== -1) {
+          state.list[index] = action.payload;
+        }
       });
   },
 });
