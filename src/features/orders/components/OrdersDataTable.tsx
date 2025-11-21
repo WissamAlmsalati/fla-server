@@ -13,13 +13,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
 import ChangeStatusDialog from "./ChangeStatusDialog";
 import { OrderDetailsDrawer } from "./OrderDetailsDrawer";
 import { Order } from "../slices/orderSlice";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { exportToCSV } from "@/lib/exportToCSV";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
 
 interface OrdersDataTableProps {
   filters?: Record<string, string | number>;
@@ -39,17 +41,21 @@ const exportOrders = (orders: Order[]) => {
   const columnMappings = {
     trackingNumber: "رقم التتبع",
     name: "اسم الطلب",
-    "customer.user.name": "العميل",
+    "customer.user.name": "اسم العميل",
     usdPrice: "السعر (USD)",
     "shippingRate.name": "نوع الشحن",
     shippingCost: "تكلفة الشحن",
-    status: "الحالة"
+    status: "الحالة",
+    createdAt: "تاريخ الإنشاء",
+    updatedAt: "آخر تحديث",
   };
   
-  // Transform status to Arabic before export
   const dataToExport = orders.map(order => ({
     ...order,
-    status: statusMap[order.status] || order.status
+    status: statusMap[order.status] || order.status,
+    createdAt: format(new Date(order.createdAt), "dd MMMM yyyy", { locale: ar }),
+    updatedAt: format(new Date(order.updatedAt), "dd MMMM yyyy", { locale: ar }),
+    shippingCost: order.shippingCost || 0,
   }));
   
   exportToCSV(dataToExport, columnMappings, "orders");
@@ -59,18 +65,11 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
   const router = useRouter();
   const dispatch = useReduxDispatch();
   const { list: orders, status, error } = useReduxSelector((state) => state.orders);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [sheetOrder, setSheetOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     dispatch(loadOrders(filters));
   }, [dispatch, JSON.stringify(filters)]);
-
-  // Auto-open details if only one result is found during a search
-  useEffect(() => {
-    if (status === "succeeded" && orders.length === 1 && filters?.search) {
-      setSelectedOrder(orders[0]);
-    }
-  }, [status, orders, filters?.search, lastScanTime]);
 
   if (status === "loading") {
     return <div className="text-center p-4">جاري التحميل...</div>;
@@ -82,9 +81,9 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
 
   return (
     <>
-      <div className="mb-4 flex justify-end">
+      <div className="flex justify-end mb-4">
         <Button onClick={() => exportOrders(orders)} variant="outline" size="sm">
-          <Download className="h-4 w-4 mr-2" />
+          <Download className="w-4 h-4 mr-2" />
           تصدير CSV
         </Button>
       </div>
@@ -106,7 +105,7 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
             {orders.map((order) => (
               <TableRow
                 key={order.id}
-                onClick={() => setSelectedOrder(order)}
+                onClick={() => router.push(`/orders/${order.id}`)}
                 className="cursor-pointer hover:bg-muted/50"
               >
                 <TableCell className="font-medium font-mono">
@@ -123,7 +122,16 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <ChangeStatusDialog order={order} />
+                  <div className="flex gap-2 justify-end">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setSheetOrder(order)}
+                    >
+                      تعديل
+                    </Button>
+                    <ChangeStatusDialog order={order} />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -139,9 +147,9 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
       </div>
 
       <OrderDetailsDrawer 
-        order={selectedOrder} 
-        open={!!selectedOrder} 
-        onOpenChange={(open) => !open && setSelectedOrder(null)} 
+        order={sheetOrder} 
+        open={!!sheetOrder} 
+        onOpenChange={(open) => !open && setSheetOrder(null)} 
         onUpdate={() => dispatch(loadOrders(filters))}
       />
     </>

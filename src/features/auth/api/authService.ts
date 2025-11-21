@@ -8,7 +8,16 @@ type LoginPayload = {
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.error ?? "Request failed");
+    // Translate common error messages to Arabic
+    let errorMessage = payload.error ?? "Request failed";
+    if (errorMessage === "Invalid credentials") {
+      errorMessage = "بيانات الدخول غير صحيحة";
+    } else if (errorMessage === "Invalid request") {
+      errorMessage = "طلب غير صحيح";
+    } else if (errorMessage === "Token invalid") {
+      errorMessage = "الجلسة منتهية الصلاحية، يرجى تسجيل الدخول مرة أخرى";
+    }
+    throw new Error(errorMessage);
   }
   return response.json();
 }

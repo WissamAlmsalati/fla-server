@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
-import { fetchCustomers } from "../slices/customerSlice";
+import { fetchCustomers, deleteCustomer } from "../slices/customerSlice";
 import { EditUserDialog } from "../../users/components/EditUserDialog";
 import { User } from "../../users/slices/userSlice";
 import {
@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Trash2 } from "lucide-react";
 import { exportToCSV } from "@/lib/exportToCSV";
+import { toast } from "sonner";
 
 const exportCustomers = (customers: any[]) => {
   const columnMappings = {
@@ -30,7 +31,22 @@ const exportCustomers = (customers: any[]) => {
   exportToCSV(customers, columnMappings, "customers");
 };
 
-export function CustomersTable() {
+const handleDeleteCustomer = async (customerId: number, dispatch: any) => {
+  if (window.confirm("هل أنت متأكد من حذف هذا العميل؟")) {
+    try {
+      await dispatch(deleteCustomer(customerId)).unwrap();
+      toast.success("تم حذف العميل بنجاح");
+    } catch (error: any) {
+      toast.error(error || "فشل في حذف العميل");
+    }
+  }
+};
+
+interface CustomersTableProps {
+  filters?: Record<string, string | number>;
+}
+
+export function CustomersTable({ filters }: CustomersTableProps) {
   // Force refresh
   const router = useRouter();
   const dispatch = useReduxDispatch();
@@ -38,9 +54,9 @@ export function CustomersTable() {
 
   useEffect(() => {
     if (status === "idle") {
-      dispatch(fetchCustomers());
+      dispatch(fetchCustomers(filters));
     }
-  }, [dispatch, status]);
+  }, [dispatch, status, JSON.stringify(filters)]);
 
   if (status === "loading") {
     return <div className="text-center p-4">جاري التحميل...</div>;
@@ -89,7 +105,17 @@ export function CustomersTable() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <EditUserDialog user={customer.user as unknown as User} />
+                  <div className="flex gap-2">
+                    <EditUserDialog user={customer.user as unknown as User} />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteCustomer(customer.id, dispatch)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             );

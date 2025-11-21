@@ -23,9 +23,17 @@ const initialState: ShippingState = {
   error: null,
 };
 
-export const loadRates = createAsyncThunk("shipping/loadRates", async () => {
+export const loadRates = createAsyncThunk("shipping/loadRates", async (filters?: Record<string, string | number>) => {
+  let query = "";
+  if (filters) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      params.set(key, String(value));
+    });
+    query = params.toString() ? `?${params.toString()}` : "";
+  }
   const token = localStorage.getItem("token");
-  const response = await fetch("/api/shipping-rates", {
+  const response = await fetch(`/api/shipping-rates${query}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {

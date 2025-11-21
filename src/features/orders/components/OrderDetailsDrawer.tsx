@@ -5,14 +5,14 @@ import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
 import { updateOrder, Order } from "../slices/orderSlice";
 import { loadRates } from "../../shipping/slices/shippingSlice";
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -113,6 +113,13 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
       return;
     }
 
+    // Validate status progression - prevent skipping statuses
+    const newStatusIndex = STATUS_ORDER.indexOf(status);
+    if (newStatusIndex > currentStatusIndex + 1) {
+      toast.error(`لا يمكن تجاوز الحالات. يجب إكمال الحالة الحالية "${statusMap[order.status]}" أولاً`);
+      return;
+    }
+
     if (status === "shipping_to_libya" && (!weight || !shippingRateId) && status !== order.status) {
       toast.error("يرجى إدخال الوزن واختيار نوع الشحن عند الشحن إلى ليبيا");
       return;
@@ -144,15 +151,15 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
   };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent dir="rtl">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto" dir="rtl">
         <div className="mx-auto w-full max-w-full md:max-w-sm px-2 md:px-0">
-          <DrawerHeader>
-            <DrawerTitle className="text-center text-xl">{order.name}</DrawerTitle>
-            <DrawerDescription className="text-center">
+          <SheetHeader>
+            <SheetTitle className="text-center text-xl">{order.name}</SheetTitle>
+            <SheetDescription className="text-center">
               {order.trackingNumber}
-            </DrawerDescription>
-          </DrawerHeader>
+            </SheetDescription>
+          </SheetHeader>
           
           <div className="p-4 pb-0 space-y-6">
             {/* Order Details Cards */}
@@ -196,8 +203,8 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                 <SelectContent>
                   {Object.entries(statusMap).map(([key, label]) => {
                     const optionIndex = STATUS_ORDER.indexOf(key);
-                    // Hide previous statuses
-                    if (optionIndex < currentStatusIndex) return null;
+                    // Only show current status and next valid status
+                    if (optionIndex < currentStatusIndex || optionIndex > currentStatusIndex + 1) return null;
                     
                     return (
                       <SelectItem key={key} value={key}>
@@ -301,7 +308,7 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
             )}
           </div>
 
-          <DrawerFooter>
+          <SheetFooter>
             <Button 
               className="w-full text-sm md:text-base"
               onClick={handleSave} 
@@ -314,12 +321,12 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
             >
               {loading ? "جاري الحفظ..." : "حفظ التغييرات"}
             </Button>
-            <DrawerClose asChild>
+            <SheetClose asChild>
               <Button variant="outline" className="w-full text-sm md:text-base">إغلاق</Button>
-            </DrawerClose>
-          </DrawerFooter>
+            </SheetClose>
+          </SheetFooter>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   );
 }

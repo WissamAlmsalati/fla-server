@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo } from "react";
 import { AppSidebar } from "@/components/app-sidebar"
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
-import { OrdersDataTable } from "@/features/orders/components/OrdersDataTable"
-import { SectionCards } from "@/components/section-cards"
+import { StatsCards } from "@/components/dashboard/stats-cards"
+import { RecentOrders } from "@/components/dashboard/recent-orders"
+import { OverviewChart } from "@/components/dashboard/overview-chart"
 import { SiteHeader } from "@/components/site-header"
 import {
   SidebarInset,
@@ -42,17 +42,14 @@ export default function Page() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <SectionCards {...stats} />
-              <div className="px-4 lg:px-6">
-                <ChartAreaInteractive />
-              </div>
-              {/* Dashboard might show recent orders or nothing, for now let's keep it or remove it. 
-                  Usually dashboard has a summary. I'll remove the full table from dashboard to avoid duplication 
-                  or maybe keep a simplified version. For now I'll remove the table from dashboard 
-                  to make it distinct from Orders page. */}
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <StatsCards {...stats} />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <div className="col-span-4">
+              <OverviewChart />
+            </div>
+            <div className="col-span-3">
+              <RecentOrders orders={orders} />
             </div>
           </div>
         </div>

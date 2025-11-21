@@ -19,9 +19,10 @@ import { exportToCSV } from "@/lib/exportToCSV";
 
 interface ShippingRatesTableProps {
   type: ShippingType;
+  filters?: Record<string, string | number>;
 }
 
-export function ShippingRatesTable({ type }: ShippingRatesTableProps) {
+export function ShippingRatesTable({ type, filters }: ShippingRatesTableProps) {
   const dispatch = useReduxDispatch();
   const { rates, status, error } = useReduxSelector((state) => state.shipping);
 
@@ -36,9 +37,9 @@ export function ShippingRatesTable({ type }: ShippingRatesTableProps) {
 
   useEffect(() => {
     if (status === "idle") {
-      dispatch(loadRates());
+      dispatch(loadRates(filters));
     }
-  }, [dispatch, status]);
+  }, [dispatch, status, JSON.stringify(filters)]);
 
   const handleDelete = async (id: number) => {
     if (confirm("هل أنت متأكد من حذف هذا التصنيف؟")) {

@@ -23,7 +23,28 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { code: { contains: search, mode: "insensitive" } },
+        {
+          user: {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { email: { contains: search, mode: "insensitive" } },
+              { mobile: { contains: search, mode: "insensitive" } },
+            ]
+          }
+        }
+      ];
+    }
+
     const customers = await prisma.customer.findMany({
+      where,
       include: {
         user: {
           select: {

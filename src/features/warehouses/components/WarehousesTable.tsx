@@ -26,15 +26,19 @@ const exportWarehouses = (warehouses: any[]) => {
   exportToCSV(warehouses, columnMappings, "warehouses");
 };
 
-export function WarehousesTable() {
+interface WarehousesTableProps {
+  filters?: Record<string, string | number>;
+}
+
+export function WarehousesTable({ filters }: WarehousesTableProps) {
   const dispatch = useReduxDispatch();
   const { list: warehouses, status, error } = useReduxSelector((state) => state.warehouses);
 
   useEffect(() => {
     if (status === "idle") {
-      dispatch(loadWarehouses());
+      dispatch(loadWarehouses(filters));
     }
-  }, [dispatch, status]);
+  }, [dispatch, status, JSON.stringify(filters)]);
 
   if (status === "loading") {
     return <div className="text-center p-4">جاري التحميل...</div>;

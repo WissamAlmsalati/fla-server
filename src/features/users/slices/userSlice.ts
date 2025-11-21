@@ -10,6 +10,7 @@ export type User = {
   photoUrl?: string;
   passportUrl?: string;
   role: Role;
+  suspended: boolean;
   createdAt: string;
   customer?: {
     id: number;
@@ -32,9 +33,17 @@ const initialState: UserState = {
   error: null,
 };
 
-export const fetchUsers = createAsyncThunk("users/fetchUsers", async () => {
+export const fetchUsers = createAsyncThunk("users/fetchUsers", async (filters?: Record<string, string | number>) => {
+  let query = "";
+  if (filters) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      params.set(key, String(value));
+    });
+    query = params.toString() ? `?${params.toString()}` : "";
+  }
   const token = localStorage.getItem("token");
-  const response = await fetch("/api/users", {
+  const response = await fetch(`/api/users${query}`, {
     headers: {
       "Authorization": `Bearer ${token}`
     }
@@ -94,6 +103,41 @@ export const deleteUser = createAsyncThunk("users/deleteUser", async (id: number
   return id;
 });
 
+export const suspendUser = createAsyncThunk("users/suspendUser", async ({ id, suspended }: { id: number; suspended: boolean }) => {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`/api/users/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify({ suspended })
+  });
+  if (!response.ok) {
+    let errorMessage = "Failed to update user suspension status";
+    try {
+      const error = await response.json();
+      errorMessage = error.error || errorMessage;
+    } catch (e) {
+      // If response is not JSON, use status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    throw new Error(errorMessage);
+  }
+  
+  // Try to parse JSON response, but if it's empty (204) or not JSON, just return the expected data
+  let result;
+  try {
+    const responseText = await response.text();
+    result = responseText ? JSON.parse(responseText) : null;
+  } catch (e) {
+    // If parsing fails, assume success and return the expected data
+    result = null;
+  }
+  
+  return { id, suspended };
+});
+
 const userSlice = createSlice({
   name: "users",
   initialState,
@@ -122,6 +166,12 @@ const userSlice = createSlice({
       })
       .addCase(deleteUser.fulfilled, (state, action) => {
         state.list = state.list.filter((user) => user.id !== action.payload);
+      })
+      .addCase(suspendUser.fulfilled, (state, action) => {
+        const index = state.list.findIndex((user) => user.id === action.payload.id);
+        if (index !== -1) {
+          state.list[index].suspended = action.payload.suspended;
+        }
       });
   },
 });

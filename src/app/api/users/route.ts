@@ -28,7 +28,37 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+    const role = searchParams.get("role");
+
+    const where: any = {};
+    if (role) {
+      where.role = role;
+    } else {
+      // Exclude customers by default
+      where.role = {
+        not: "CUSTOMER"
+      };
+    }
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { mobile: { contains: search, mode: "insensitive" } },
+        {
+          customer: {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { code: { contains: search, mode: "insensitive" } },
+            ]
+          }
+        }
+      ];
+    }
+
     const users = await prisma.user.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -38,6 +68,7 @@ export async function GET(request: Request) {
         mobile: true,
         photoUrl: true,
         passportUrl: true,
+        suspended: true,
         createdAt: true,
         customer: {
           select: {

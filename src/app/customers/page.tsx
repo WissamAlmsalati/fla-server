@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import {
@@ -6,8 +9,20 @@ import {
 } from "@/components/ui/sidebar"
 import { CustomersTable } from "@/features/customers/components/CustomersTable"
 import { AddCustomerDialog } from "@/features/customers/components/AddCustomerDialog"
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 export default function CustomersPage() {
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   return (
     <SidebarProvider
       style={
@@ -27,7 +42,20 @@ export default function CustomersPage() {
                 <h1 className="text-2xl font-bold tracking-tight">إدارة العملاء</h1>
                 <AddCustomerDialog />
               </div>
-              <CustomersTable />
+
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="بحث بالاسم، البريد الإلكتروني، رقم الهاتف، كود الشحن..."
+                    className="pr-8"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <CustomersTable filters={{ search: debouncedSearch }} />
             </div>
           </div>
         </div>

@@ -19,14 +19,17 @@ import { Button } from "@/components/ui/button";
 
 // ...other imports...
 
-export default function ChangeStatusDialog(props) {
-  // Props: expects an 'order' object and optional 'onSuccess' callback
-  const { order, onSuccess } = props;
+interface ChangeStatusDialogProps {
+  order: Order;
+  onSuccess?: () => void;
+}
+
+export default function ChangeStatusDialog({ order, onSuccess }: ChangeStatusDialogProps) {
   const dispatch = useReduxDispatch();
   const { rates, status: ratesStatus } = useReduxSelector((state) => state.shipping);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [shippingType, setShippingType] = useState(order?.shippingType || "");
+  const [shippingType, setShippingType] = useState(order?.shippingRate?.type || "");
   const [shippingRateId, setShippingRateId] = useState(order?.shippingRateId ? order.shippingRateId.toString() : "");
   const [weight, setWeight] = useState(order?.weight ? order.weight.toString() : "");
   // Filter rates by type

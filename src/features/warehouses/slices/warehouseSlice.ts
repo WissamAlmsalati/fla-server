@@ -19,8 +19,8 @@ const initialState: WarehousesState = {
   error: null,
 };
 
-export const loadWarehouses = createAsyncThunk("warehouses/load", async () => {
-  const response = await fetchWarehouses();
+export const loadWarehouses = createAsyncThunk("warehouses/load", async (filters?: Record<string, string | number>) => {
+  const response = await fetchWarehouses(filters);
   return response.data as Warehouse[];
 });
 

@@ -151,7 +151,7 @@ export function TransactionReports({ customerId }: TransactionReportsProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">تقارير المعاملات المالية</h3>
         <Button onClick={handleExportReport} variant="outline" size="sm">

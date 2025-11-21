@@ -58,3 +58,46 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const auth = await requireAuth(request);
+    if (auth.role !== Role.ADMIN) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const { id } = await params;
+
+    // Check if customer has orders
+    const customerWithOrders = await prisma.customer.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        _count: {
+          select: { orders: true },
+        },
+      },
+    });
+
+    if (!customerWithOrders) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    if (customerWithOrders._count.orders > 0) {
+      return NextResponse.json({ error: "Cannot delete customer with existing orders" }, { status: 400 });
+    }
+
+    await prisma.customer.delete({
+      where: { id: parseInt(id) },
+    });
+
+    return NextResponse.json({ message: "Customer deleted successfully" });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Error deleting customer" },
+      { status: 400 }
+    );
+  }
+}

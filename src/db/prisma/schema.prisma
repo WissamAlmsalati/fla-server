@@ -59,6 +59,7 @@ model User {
   mobile        String?         @unique
   photoUrl      String?
   passportUrl   String?
+  suspended     Boolean         @default(false)
   messages      OrderMessage[]
   createdAt     DateTime        @default(now())
   customer      Customer?

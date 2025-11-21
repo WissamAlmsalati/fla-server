@@ -9,14 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import Image from "next/image";
-import { ArrowRight, Pencil, Trash2, Package, User as UserIcon, Mail, Phone, Shield, Calendar, Box, FileText, Image as ImageIcon, Wallet, TrendingUp, DollarSign } from "lucide-react";
+import { ArrowRight, Pencil, Trash2, Package, User as UserIcon, Mail, Phone, Shield, Calendar, Box, FileText, Image as ImageIcon, Wallet, TrendingUp, DollarSign, UserX, UserCheck } from "lucide-react";
 import { EditUserDialog } from "./EditUserDialog";
 import { ManageWalletDialog } from "@/features/customers/components/ManageWalletDialog";
 import { CustomerOrders } from "./CustomerOrders";
 import { TransactionHistory } from "@/features/transactions/components/TransactionHistory";
 import { TransactionReports } from "@/features/transactions/components/TransactionReports";
 import { useReduxDispatch } from "@/redux/provider";
-import { deleteUser } from "../slices/userSlice";
+import { deleteUser, suspendUser } from "../slices/userSlice";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -66,13 +66,27 @@ export function UserDetail({ userId }: UserDetailProps) {
   }, [userId]);
 
   const handleDelete = async () => {
-    if (confirm("هل أنت متأكد من حذف هذا المستخدم؟")) {
+    if (confirm("هل أنت متأكد من حذف هذا المستخدم؟ لا يمكن التراجع عن هذا الإجراء.")) {
       try {
         await dispatch(deleteUser(userId)).unwrap();
         toast.success("تم حذف المستخدم بنجاح");
         router.push("/users");
       } catch (error: any) {
         toast.error(error.message || "فشل حذف المستخدم");
+      }
+    }
+  };
+
+  const handleSuspendToggle = async () => {
+    if (!user) return;
+    const action = user.suspended ? "إلغاء تعليق" : "تعليق";
+    if (confirm(`هل أنت متأكد من ${action} حساب هذا المستخدم؟`)) {
+      try {
+        await dispatch(suspendUser({ id: userId, suspended: !user.suspended })).unwrap();
+        toast.success(`تم ${action} الحساب بنجاح`);
+        fetchUser(); // Refresh user data
+      } catch (error: any) {
+        toast.error(error.message || `فشل ${action} الحساب`);
       }
     }
   };
@@ -116,6 +130,11 @@ export function UserDetail({ userId }: UserDetailProps) {
                 <Badge variant="secondary" className="font-normal">
                   {roleMap[user.role] || user.role}
                 </Badge>
+                {user.suspended && (
+                  <Badge variant="destructive" className="font-normal">
+                    حساب معلق
+                  </Badge>
+                )}
                 <span className="text-sm text-muted-foreground" dir="ltr">{user.email}</span>
               </div>
             </div>
@@ -125,51 +144,63 @@ export function UserDetail({ userId }: UserDetailProps) {
         <div className="flex gap-2">
           <EditUserDialog user={user} onSuccess={fetchUser} />
           <Button 
+            variant={user.suspended ? "default" : "outline"} 
+            size="sm"
+            onClick={handleSuspendToggle}
+            className={user.suspended ? "bg-orange-600 hover:bg-orange-700" : ""}
+          >
+            {user.suspended ? <UserCheck className="h-4 w-4 ml-2" /> : <UserX className="h-4 w-4 ml-2" />}
+            {user.suspended ? "إلغاء تعليق الحساب" : "تعليق الحساب"}
+          </Button>
+          <Button 
             variant="destructive" 
-            size="icon" 
+            size="sm"
             onClick={handleDelete}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4 ml-2" />
+            حذف
           </Button>
         </div>
       </div>
 
       {/* Tabs Navigation */}
-      <Tabs defaultValue="details" className="w-full">
-        <TabsList className="w-full justify-start border-b h-auto p-0 bg-transparent gap-6">
-          <TabsTrigger 
-            value="details" 
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none px-2 py-3 bg-transparent font-medium transition-colors hover:text-primary/80"
-          >
-            <UserIcon className="h-4 w-4 ml-2" />
-            التفاصيل
-          </TabsTrigger>
-          <TabsTrigger 
-            value="orders" 
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none px-2 py-3 bg-transparent font-medium transition-colors hover:text-primary/80"
-          >
-            <Package className="h-4 w-4 ml-2" />
-            الطلبات
-          </TabsTrigger>
-          {user.role === "CUSTOMER" && (
-            <>
-              <TabsTrigger 
-                value="transactions" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none px-2 py-3 bg-transparent font-medium transition-colors hover:text-primary/80"
-              >
-                <Wallet className="h-4 w-4 ml-2" />
-                المعاملات المالية
-              </TabsTrigger>
-              <TabsTrigger 
-                value="reports" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none px-2 py-3 bg-transparent font-medium transition-colors hover:text-primary/80"
-              >
-                <FileText className="h-4 w-4 ml-2" />
-                التقارير
-              </TabsTrigger>
-            </>
-          )}
-        </TabsList>
+      <Tabs defaultValue="details" className="w-full" dir="rtl">
+        <div className="flex justify-center py-4">
+          <TabsList className="bg-white rounded-lg p-1 shadow-sm border h-auto">
+            <TabsTrigger 
+              value="details" 
+              className="rounded-md px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+            >
+              <UserIcon className="h-4 w-4 mr-2" />
+              التفاصيل
+            </TabsTrigger>
+            <TabsTrigger 
+              value="orders" 
+              className="rounded-md px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+            >
+              <Package className="h-4 w-4 mr-2" />
+              الطلبات
+            </TabsTrigger>
+            {user.role === "CUSTOMER" && (
+              <>
+                <TabsTrigger 
+                  value="transactions" 
+                  className="rounded-md px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                >
+                  <Wallet className="h-4 w-4 mr-2" />
+                  المعاملات المالية
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="reports" 
+                  className="rounded-md px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  التقارير
+                </TabsTrigger>
+              </>
+            )}
+          </TabsList>
+        </div>
 
         <TabsContent value="details" className="mt-6">
           <div className="grid gap-6 lg:grid-cols-3">
@@ -177,7 +208,7 @@ export function UserDetail({ userId }: UserDetailProps) {
             <div className="lg:col-span-2 space-y-6">
               {/* Wallet Section - Only for Customers */}
               {user.role === "CUSTOMER" && user.customer && (
-                <Card>
+                <Card className="shadow-none">
                   <CardHeader className="pb-4 border-b">
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2 text-lg">
@@ -197,7 +228,7 @@ export function UserDetail({ userId }: UserDetailProps) {
                   <CardContent className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* USD Balance */}
-                      <div className="rounded-xl border bg-card p-4 shadow-sm">
+                      <div className="rounded-xl border bg-card p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-sm font-medium text-muted-foreground">رصيد الدولار</div>
                           <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -208,7 +239,7 @@ export function UserDetail({ userId }: UserDetailProps) {
                       </div>
 
                       {/* LYD Balance */}
-                      <div className="rounded-xl border bg-card p-4 shadow-sm">
+                      <div className="rounded-xl border bg-card p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-sm font-medium text-muted-foreground">رصيد الدينار</div>
                           <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -219,7 +250,7 @@ export function UserDetail({ userId }: UserDetailProps) {
                       </div>
 
                       {/* CNY Balance */}
-                      <div className="rounded-xl border bg-card p-4 shadow-sm">
+                      <div className="rounded-xl border bg-card p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-sm font-medium text-muted-foreground">رصيد اليوان</div>
                           <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -243,7 +274,7 @@ export function UserDetail({ userId }: UserDetailProps) {
               )}
 
               {/* Basic Information Card */}
-              <Card>
+              <Card className="shadow-none">
                 <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <UserIcon className="h-5 w-5 text-primary" />
@@ -297,7 +328,7 @@ export function UserDetail({ userId }: UserDetailProps) {
 
             {/* Right Column - Documents (1/3 width) */}
             <div className="space-y-6">
-              <Card>
+              <Card className="shadow-none">
                 <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <FileText className="h-5 w-5 text-primary" />
@@ -355,7 +386,7 @@ export function UserDetail({ userId }: UserDetailProps) {
         </TabsContent>
 
         <TabsContent value="orders" className="mt-6">
-          <Card>
+          <Card className="shadow-none">
             <CardHeader className="border-b">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Package className="h-5 w-5 text-primary" />
@@ -380,7 +411,7 @@ export function UserDetail({ userId }: UserDetailProps) {
         {user.role === "CUSTOMER" && user.customer?.id && (
           <>
             <TabsContent value="transactions" className="mt-6">
-              <Card>
+              <Card className="shadow-none">
                 <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Wallet className="h-5 w-5 text-primary" />

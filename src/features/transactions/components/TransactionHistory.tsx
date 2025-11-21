@@ -5,7 +5,7 @@ import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
 import { fetchTransactions } from "../slices/transactionSlice";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download, TrendingUp, TrendingDown, Filter } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, Filter, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { exportToCSV } from "@/lib/exportToCSV";
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 interface TransactionHistoryProps {
   customerId: number;
@@ -29,6 +30,18 @@ export function TransactionHistory({ customerId }: TransactionHistoryProps) {
   
   const [currencyFilter, setCurrencyFilter] = useState<Currency | "ALL">("ALL");
   const [typeFilter, setTypeFilter] = useState<TransactionType | "ALL">("ALL");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     dispatch(fetchTransactions({
@@ -82,14 +95,37 @@ export function TransactionHistory({ customerId }: TransactionHistoryProps) {
     return <div className="text-center py-8">جاري التحميل...</div>;
   }
 
+  const filteredTransactions = transactions.filter(transaction => {
+    if (!debouncedSearch) return true;
+    return transaction.notes?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+           transaction.amount.toString().includes(debouncedSearch) ||
+           transaction.type.toLowerCase().includes(debouncedSearch.toLowerCase());
+  });
+
+  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4" />
+    <div className="space-y-4" dir="rtl">
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="بحث في المعاملات..."
+              className="pr-8 w-[200px]"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          
           <Select value={currencyFilter} onValueChange={(v) => setCurrencyFilter(v as Currency | "ALL")}>
             <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="العملة" />
+              <SelectValue placeholder="جميع العملات" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">جميع العملات</SelectItem>
@@ -101,7 +137,7 @@ export function TransactionHistory({ customerId }: TransactionHistoryProps) {
 
           <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TransactionType | "ALL")}>
             <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="النوع" />
+              <SelectValue placeholder="جميع الأنواع" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">جميع الأنواع</SelectItem>
@@ -111,8 +147,8 @@ export function TransactionHistory({ customerId }: TransactionHistoryProps) {
           </Select>
         </div>
 
-        <Button onClick={handleExport} variant="outline" size="sm">
-          <Download className="h-4 w-4 mr-2" />
+        <Button onClick={handleExport} variant="outline" size="sm" className="shrink-0">
+          <Download className="h-4 w-4 ml-2" />
           تصدير CSV
         </Button>
       </div>
@@ -122,60 +158,96 @@ export function TransactionHistory({ customerId }: TransactionHistoryProps) {
           لا توجد معاملات مالية
         </div>
       ) : (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-right">التاريخ</TableHead>
-                <TableHead className="text-right">النوع</TableHead>
-                <TableHead className="text-right">المبلغ</TableHead>
-                <TableHead className="text-right">العملة</TableHead>
-                <TableHead className="text-right">الرصيد قبل</TableHead>
-                <TableHead className="text-right">الرصيد بعد</TableHead>
-                <TableHead className="text-right">ملاحظات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell className="text-right">
-                    {format(new Date(transaction.createdAt), "yyyy-MM-dd HH:mm", {
-                      locale: ar,
-                    })}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {transaction.type === "DEPOSIT" ? (
-                      <div className="flex items-center gap-2 text-green-600">
-                        <TrendingUp className="h-4 w-4" />
-                        إيداع
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-red-600">
-                        <TrendingDown className="h-4 w-4" />
-                        سحب
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {transaction.amount.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {getCurrencySymbol(transaction.currency)}
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    {transaction.balanceBefore.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">
-                    {transaction.balanceAfter.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right text-sm text-muted-foreground">
-                    {transaction.notes || "-"}
-                  </TableCell>
+        <>
+          <div className="rounded-md border pr-4 pl-4" dir="rtl">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="text-right font-semibold">التاريخ</TableHead>
+                  <TableHead className="text-right font-semibold">النوع</TableHead>
+                  <TableHead className="text-right font-semibold">المبلغ</TableHead>
+                  <TableHead className="text-right font-semibold">العملة</TableHead>
+                  <TableHead className="text-right font-semibold">الرصيد قبل</TableHead>
+                  <TableHead className="text-right font-semibold">الرصيد بعد</TableHead>
+                  <TableHead className="text-right font-semibold">ملاحظات</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {paginatedTransactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell className="text-right">
+                      {format(new Date(transaction.createdAt), "yyyy-MM-dd HH:mm", {
+                        locale: ar,
+                      })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {transaction.type === "DEPOSIT" ? (
+                        <div className="flex items-center gap-2 text-green-600">
+                          <TrendingUp className="h-4 w-4" />
+                          إيداع
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-red-600">
+                          <TrendingDown className="h-4 w-4" />
+                          سحب
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      <span className={transaction.type === "DEPOSIT" ? "text-green-600" : "text-red-600"}>
+                        {transaction.type === "DEPOSIT" ? "+" : "-"}{transaction.amount.toFixed(2)} {getCurrencySymbol(transaction.currency)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {transaction.currency}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground font-mono">
+                      {transaction.balanceBefore.toFixed(2)} {getCurrencySymbol(transaction.currency)}
+                    </TableCell>
+                    <TableCell className="text-right font-semibold font-mono">
+                      {transaction.balanceAfter.toFixed(2)} {getCurrencySymbol(transaction.currency)}
+                    </TableCell>
+                    <TableCell className="text-right text-sm text-muted-foreground">
+                      {transaction.notes || "-"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronLeft className="h-4 w-4 ml-1" />
+                  التالي
+                </Button>
+                <span className="text-sm">
+                  الصفحة {currentPage} من {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  السابق
+                  <ChevronRight className="h-4 w-4 mr-1" />
+                </Button>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                عرض {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredTransactions.length)} إلى {Math.min(currentPage * ITEMS_PER_PAGE, filteredTransactions.length)} من {filteredTransactions.length} معاملة
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

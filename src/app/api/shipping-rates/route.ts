@@ -12,7 +12,19 @@ const createRateSchema = z.object({
 export async function GET(request: Request) {
   try {
     await requireAuth(request);
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { type: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
     const rates = await prisma.shippingRate.findMany({
+      where,
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(rates);

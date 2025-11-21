@@ -13,6 +13,7 @@ import {
   Search,
   Command
 } from "lucide-react"
+import Image from "next/image"
 
 import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
@@ -36,7 +37,7 @@ const data = {
   },
   navMain: [
     {
-      title: "لوحة التحكم",
+      title: "نظرة عامة",
       url: "/dashboard",
       icon: LayoutDashboard,
     },
@@ -110,9 +111,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              <a href="#">
-                <Command className="size-5!" />
-                <span className="text-base font-semibold">Alwala Shipping</span>
+              <a href="#" className="flex items-center gap-2">
+                <Image
+                  src="/photos/logo-without-bg.png"
+                  alt="Logo"
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                />
+                <span className="text-base font-semibold">شركة الولاء الدائم</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

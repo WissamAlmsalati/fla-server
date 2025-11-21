@@ -16,6 +16,11 @@ export async function POST(request: Request) {
     if (!user || payload.password !== user.passwordHash) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
+
+    // Check if user account is suspended
+    if (user.suspended) {
+      return NextResponse.json({ error: "الحساب معلق، يرجى التواصل مع الإدارة" }, { status: 403 });
+    }
     const accessToken = signAccessToken({
       sub: user.id,
       role: user.role,

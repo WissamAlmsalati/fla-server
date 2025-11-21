@@ -13,10 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Scan, Search } from "lucide-react";
 import { ScannerDialog } from "@/components/scanner-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Page() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [lastScanTime, setLastScanTime] = useState(0);
 
@@ -26,6 +28,10 @@ export default function Page() {
     }, 500);
     return () => clearTimeout(timer);
   }, [search]);
+
+  const filters: Record<string, string | number> = {};
+  if (debouncedSearch) filters.search = debouncedSearch;
+  if (statusFilter && statusFilter !== "all") filters.status = statusFilter;
 
   return (
     <SidebarProvider
@@ -57,6 +63,20 @@ export default function Page() {
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="جميع الحالات" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الحالات</SelectItem>
+                    <SelectItem value="purchased">تم الشراء</SelectItem>
+                    <SelectItem value="arrived_to_china">وصل إلى الصين</SelectItem>
+                    <SelectItem value="shipping_to_libya">جاري الشحن إلى ليبيا</SelectItem>
+                    <SelectItem value="arrived_libya">وصل إلى ليبيا</SelectItem>
+                    <SelectItem value="ready_for_pickup">جاهز للاستلام</SelectItem>
+                    <SelectItem value="delivered">تم التسليم</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
                   variant="outline"
                   size="icon"
@@ -67,7 +87,7 @@ export default function Page() {
                 </Button>
               </div>
 
-              <OrdersDataTable filters={{ search: debouncedSearch }} lastScanTime={lastScanTime} />
+              <OrdersDataTable filters={filters} lastScanTime={lastScanTime} />
             </div>
           </div>
         </div>

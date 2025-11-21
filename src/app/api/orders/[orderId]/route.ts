@@ -71,7 +71,7 @@ export async function PATCH(
     }
 
     const updatedOrder = await prisma.$transaction(async (tx) => {
-      // Status progression validation
+      // Status progression validation - prevent skipping statuses
       const STATUS_ORDER = [
         "purchased",
         "arrived_to_china",
@@ -84,9 +84,14 @@ export async function PATCH(
       const currentStatusIndex = STATUS_ORDER.indexOf(order.status);
       const newStatusIndex = data.status ? STATUS_ORDER.indexOf(data.status) : currentStatusIndex;
 
-      // Prevent going back if currently at or past 'arrived_to_china'
-      if (currentStatusIndex >= 1 && newStatusIndex < currentStatusIndex) {
-        throw new Error("لا يمكن التراجع عن حالة الطلب بعد وصوله إلى الصين");
+      // Prevent skipping forward - can only move to next status or stay at current
+      if (newStatusIndex > currentStatusIndex + 1) {
+        throw new Error(`لا يمكن تجاوز الحالات. يجب إكمال الحالة الحالية "${order.status}" أولاً`);
+      }
+
+      // Allow going backwards for corrections (except after certain points)
+      if (newStatusIndex < currentStatusIndex) {
+        // Allow going back, but maybe add some restrictions later if needed
       }
 
       let shippingCost = undefined;

@@ -164,6 +164,11 @@ export async function GET(request: NextRequest) {
             }
         }
 
+        const search = searchParams.get("search");
+        if (search) {
+            where.notes = { contains: search, mode: "insensitive" };
+        }
+
         // Fetch transactions
         const transactions = await prisma.transaction.findMany({
             where,

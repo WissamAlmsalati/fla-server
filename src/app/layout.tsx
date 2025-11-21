@@ -11,8 +11,9 @@ const almarai = Almarai({
 });
 
 export const metadata: Metadata = {
-  title: "Alwala Shipping · Login",
-  description: "Secure shipping control center for China to Libya logistics",
+  title: "شركة الولاء الدائم ",
+  description: "لوحة تحكم نظام إدارة المشتريات والشحن",
+  
 };
 
 export default function RootLayout({

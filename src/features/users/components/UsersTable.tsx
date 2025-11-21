@@ -59,7 +59,11 @@ const exportUsers = (users: User[]) => {
   exportToCSV(dataToExport, columnMappings, "users");
 };
 
-export function UsersTable() {
+interface UsersTableProps {
+  filters?: Record<string, string | number>;
+}
+
+export function UsersTable({ filters }: UsersTableProps) {
   const router = useRouter();
   const dispatch = useReduxDispatch();
   const { list: users, status, error } = useReduxSelector((state) => state.users);
@@ -77,9 +81,9 @@ export function UsersTable() {
 
   useEffect(() => {
     if (status === "idle") {
-      dispatch(fetchUsers());
+      dispatch(fetchUsers(filters));
     }
-  }, [dispatch, status]);
+  }, [dispatch, status, JSON.stringify(filters)]);
 
   if (status === "loading") {
     return <div className="text-center p-4">جاري التحميل...</div>;
@@ -106,6 +110,7 @@ export function UsersTable() {
             <TableHead className="text-right">رقم الهاتف</TableHead>
             <TableHead className="text-right">كود الشحن</TableHead>
             <TableHead className="text-right">الدور</TableHead>
+            <TableHead className="text-right">الحالة</TableHead>
             <TableHead className="text-right">تاريخ التسجيل</TableHead>
             <TableHead className="text-right">إجراءات</TableHead>
           </TableRow>
@@ -133,6 +138,13 @@ export function UsersTable() {
                 <Badge variant={roleColorMap[user.role] || "outline"}>
                   {roleMap[user.role] || user.role}
                 </Badge>
+              </TableCell>
+              <TableCell>
+                {user.suspended ? (
+                  <Badge variant="destructive">معلق</Badge>
+                ) : (
+                  <Badge variant="secondary">نشط</Badge>
+                )}
               </TableCell>
               <TableCell>
                 {format(new Date(user.createdAt), "dd MMMM yyyy", { locale: ar })}

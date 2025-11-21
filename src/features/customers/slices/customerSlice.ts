@@ -35,9 +35,17 @@ const initialState: CustomerState = {
   error: null,
 };
 
-export const fetchCustomers = createAsyncThunk("customers/fetchCustomers", async () => {
+export const fetchCustomers = createAsyncThunk("customers/fetchCustomers", async (filters?: Record<string, string | number>) => {
+  let query = "";
+  if (filters) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      params.set(key, String(value));
+    });
+    query = params.toString() ? `?${params.toString()}` : "";
+  }
   const token = localStorage.getItem("token");
-  const response = await fetch("/api/customers", {
+  const response = await fetch(`/api/customers${query}`, {
     headers: {
       "Authorization": `Bearer ${token}`
     }
@@ -82,6 +90,21 @@ export const updateCustomer = createAsyncThunk("customers/updateCustomer", async
   return response.json();
 });
 
+export const deleteCustomer = createAsyncThunk("customers/deleteCustomer", async (id: number) => {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`/api/customers/${id}`, {
+    method: "DELETE",
+    headers: {
+      "Authorization": `Bearer ${token}`
+    },
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to delete customer");
+  }
+  return id;
+});
+
 const customerSlice = createSlice({
   name: "customers",
   initialState,
@@ -107,6 +130,9 @@ const customerSlice = createSlice({
         if (index !== -1) {
           state.list[index] = action.payload;
         }
+      })
+      .addCase(deleteCustomer.fulfilled, (state, action) => {
+        state.list = state.list.filter(c => c.id !== action.payload);
       });
   },
 });

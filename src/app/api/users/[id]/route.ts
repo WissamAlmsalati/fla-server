@@ -21,6 +21,7 @@ const updateUserSchema = z.object({
   photoUrl: z.string().optional(),
   passportUrl: z.string().optional(),
   customerCode: z.string().optional(),
+  suspended: z.boolean().optional(),
 });
 
 export async function GET(
@@ -124,6 +125,7 @@ export async function PUT(
           mobile: payload.mobile,
           photoUrl: payload.photoUrl,
           passportUrl: payload.passportUrl,
+          suspended: payload.suspended,
         },
       });
 
@@ -160,7 +162,9 @@ export async function PUT(
       return user;
     });
 
-    return NextResponse.json(updatedUser);
+    // Return only the necessary fields, not the password hash
+    const { passwordHash, ...userResponse } = updatedUser;
+    return NextResponse.json(userResponse);
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Error updating user" },
