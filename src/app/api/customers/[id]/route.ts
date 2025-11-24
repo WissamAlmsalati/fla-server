@@ -12,6 +12,10 @@ const updateCustomerSchema = z.object({
   balanceUSD: z.number().optional(),
   balanceLYD: z.number().optional(),
   balanceCNY: z.number().optional(),
+  code: z.string().optional(),
+  dubaiCode: z.string().optional(),
+  usaCode: z.string().optional(),
+  turkeyCode: z.string().optional(),
 });
 
 export async function PATCH(

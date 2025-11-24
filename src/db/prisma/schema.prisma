@@ -69,6 +69,9 @@ model Customer {
   id           Int           @id @default(autoincrement())
   name         String
   code         String        @unique
+  dubaiCode    String?       @unique
+  usaCode      String?       @unique
+  turkeyCode   String?       @unique
   balanceUSD   Float         @default(0)
   balanceLYD   Float         @default(0)
   balanceCNY   Float         @default(0)

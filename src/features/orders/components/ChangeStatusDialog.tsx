@@ -32,8 +32,10 @@ export default function ChangeStatusDialog({ order, onSuccess }: ChangeStatusDia
   const [shippingType, setShippingType] = useState(order?.shippingRate?.type || "");
   const [shippingRateId, setShippingRateId] = useState(order?.shippingRateId ? order.shippingRateId.toString() : "");
   const [weight, setWeight] = useState(order?.weight ? order.weight.toString() : "");
-  // Filter rates by type
-  const filteredRates = rates.filter((rate) => rate.type === shippingType);
+  // Filter rates by type and country
+  const filteredRates = rates.filter((rate) => 
+    rate.type === shippingType && rate.country === (order.country || "CHINA")
+  );
   // Calculate cost (example logic, adjust as needed)
   const calculatedCost = (() => {
     if (!shippingType || !shippingRateId || !weight) return 0;

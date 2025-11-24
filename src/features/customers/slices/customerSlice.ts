@@ -4,6 +4,9 @@ export type Customer = {
   id: number;
   name: string;
   code: string;
+  dubaiCode?: string;
+  usaCode?: string;
+  turkeyCode?: string;
   userId: number | null;
   balanceUSD: number;
   balanceLYD: number;
@@ -60,7 +63,7 @@ export const createCustomer = createAsyncThunk("customers/createCustomer", async
   const token = localStorage.getItem("token");
   const response = await fetch("/api/customers", {
     method: "POST",
-    headers: { 
+    headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`
     },
@@ -73,11 +76,11 @@ export const createCustomer = createAsyncThunk("customers/createCustomer", async
   return response.json();
 });
 
-export const updateCustomer = createAsyncThunk("customers/updateCustomer", async (data: { id: number; balanceUSD?: number; balanceLYD?: number; balanceCNY?: number }) => {
+export const updateCustomer = createAsyncThunk("customers/updateCustomer", async (data: { id: number; balanceUSD?: number; balanceLYD?: number; balanceCNY?: number; code?: string; dubaiCode?: string; usaCode?: string; turkeyCode?: string }) => {
   const token = localStorage.getItem("token");
   const response = await fetch(`/api/customers/${data.id}`, {
     method: "PATCH",
-    headers: { 
+    headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`
     },

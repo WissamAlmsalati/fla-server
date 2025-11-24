@@ -1,0 +1,23 @@
+# Shipment Code Generation Walkthrough
+
+## Changes
+- Modified [src/app/api/users/route.ts](file:///Users/wissamalmsalati/Documents/alwala-project/alwala-server/src/app/api/users/route.ts) to generate shipment codes for all supported regions with specific formats when a new customer is created.
+- The codes are generated sequentially based on the last existing China code (`KO219-FLL`).
+- All codes share the same sequence number.
+
+## Code Formats
+- **China**: `KO219-FLL` + Number (e.g., `KO219-FLL101`)
+- **Dubai**: `BSB FLL D` + Number (e.g., `BSB FLL D101`)
+- **USA**: `Global FLL ` + Number (e.g., `Global FLL 101`) (Note the space)
+- **Turkey**: `ABUHAJ FLL` + Number (e.g., `ABUHAJ FLL101`) (No space)
+
+## Verification Results
+### Automated Verification
+- The code compiles successfully.
+- The logic ensures that if a customer is created, all 4 codes are generated with the correct prefixes and saved to the database.
+
+### Manual Verification
+1.  Log in as an Admin.
+2.  Go to the Users page.
+3.  Create a new user with the role `CUSTOMER`.
+4.  Verify in the database or customer details that the user has the codes in the formats listed above.

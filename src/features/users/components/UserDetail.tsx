@@ -261,14 +261,46 @@ export function UserDetail({ userId }: UserDetailProps) {
                       </div>
                     </div>
 
-                    {/* Shipping Code Badge */}
-                    {user.customer.code && (
-                      <div className="mt-6 flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-dashed">
+                    {/* Shipping Codes Grid */}
+                    <div className="mt-6 space-y-3">
+                      <div className="flex items-center gap-2 mb-3">
                         <Box className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">كود الشحن:</span>
-                        <span className="font-mono font-medium">{user.customer.code}</span>
+                        <span className="text-sm font-medium text-muted-foreground">أكواد الشحن:</span>
                       </div>
-                    )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* China Code */}
+                        {user.customer.code && (
+                          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-dashed">
+                            <span className="text-xs text-muted-foreground">الصين:</span>
+                            <span className="font-mono font-medium text-sm">{user.customer.code}</span>
+                          </div>
+                        )}
+                        
+                        {/* Dubai Code */}
+                        {user.customer.dubaiCode && (
+                          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-dashed">
+                            <span className="text-xs text-muted-foreground">دبي:</span>
+                            <span className="font-mono font-medium text-sm">{user.customer.dubaiCode}</span>
+                          </div>
+                        )}
+                        
+                        {/* USA Code */}
+                        {user.customer.usaCode && (
+                          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-dashed">
+                            <span className="text-xs text-muted-foreground">أمريكا:</span>
+                            <span className="font-mono font-medium text-sm">{user.customer.usaCode}</span>
+                          </div>
+                        )}
+                        
+                        {/* Turkey Code */}
+                        {user.customer.turkeyCode && (
+                          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-dashed">
+                            <span className="text-xs text-muted-foreground">تركيا:</span>
+                            <span className="font-mono font-medium text-sm">{user.customer.turkeyCode}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               )}

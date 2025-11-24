@@ -6,6 +6,7 @@ export const orderFiltersSchema = z.object({
   search: z.string().optional(),
   limit: z.coerce.number().min(10).max(50).default(20),
   cursor: z.string().optional(),
+  country: z.string().optional(),
 });
 
 export const createOrderSchema = z.object({
@@ -17,6 +18,7 @@ export const createOrderSchema = z.object({
   notes: z.string().optional(),
   customer_id: z.number(),
   weight: z.number().optional(),
+  country: z.string().default("CHINA"),
 });
 
 export const updateOrderSchema = z.object({

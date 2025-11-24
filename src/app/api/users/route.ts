@@ -102,8 +102,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User already exists" }, { status: 400 });
     }
 
-    // Generate shipping code if role is CUSTOMER
+    // Generate shipping codes if role is CUSTOMER
     let shippingCode = undefined;
+    let dubaiCode = undefined;
+    let usaCode = undefined;
+    let turkeyCode = undefined;
+
     if (payload.role === Role.CUSTOMER) {
       const lastCustomer = await prisma.customer.findFirst({
         where: {
@@ -116,15 +120,18 @@ export async function POST(request: Request) {
         }
       });
 
-      let nextCode = "KO219-FLL1";
+      let nextNumber = 1;
       if (lastCustomer) {
         const match = lastCustomer.code.match(/KO219-FLL(\d+)/);
         if (match) {
-          const lastNumber = parseInt(match[1]);
-          nextCode = `KO219-FLL${lastNumber + 1}`;
+          nextNumber = parseInt(match[1]) + 1;
         }
       }
-      shippingCode = nextCode;
+
+      shippingCode = `KO219-FLL${nextNumber}`;
+      dubaiCode = `BSB FLL D${nextNumber}`;
+      usaCode = `Global FLL ${nextNumber}`;
+      turkeyCode = `ABUHAJ FLL${nextNumber}`;
     }
 
     const user = await prisma.$transaction(async (tx) => {
@@ -146,9 +153,12 @@ export async function POST(request: Request) {
             name: newUser.name,
             userId: newUser.id,
             code: shippingCode,
+            dubaiCode,
+            usaCode,
+            turkeyCode,
           },
         });
-        
+
         // Update user with customerId (optional, but good for quick access)
         // Actually schema has customerId Int? but it's not a relation field in the new schema?
         // In the schema provided: customer Customer?
@@ -158,7 +168,7 @@ export async function POST(request: Request) {
         // The relation is on Customer side: user User @relation...
         // So User.customer is accessible.
       }
-      
+
       return newUser;
     });
 

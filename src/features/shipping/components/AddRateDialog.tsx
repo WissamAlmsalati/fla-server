@@ -32,6 +32,7 @@ export function AddRateDialog() {
     type: "AIR" as ShippingType,
     name: "",
     price: "",
+    country: "CHINA",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,7 +45,7 @@ export function AddRateDialog() {
       })).unwrap();
       toast.success("تم إضافة التصنيف بنجاح");
       setOpen(false);
-      setFormData({ type: "AIR", name: "", price: "" });
+      setFormData({ type: "AIR", name: "", price: "", country: "CHINA" });
     } catch (error: any) {
       toast.error(error.message || "فشل إضافة التصنيف");
     } finally {
@@ -80,6 +81,25 @@ export function AddRateDialog() {
                 <SelectContent dir="rtl">
                   <SelectItem value="AIR">شحن جوي</SelectItem>
                   <SelectItem value="SEA">شحن بحري</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="country" className="text-right">
+                البلد
+              </Label>
+              <Select
+                value={formData.country}
+                onValueChange={(value) => setFormData({ ...formData, country: value })}
+              >
+                <SelectTrigger dir="rtl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent dir="rtl">
+                  <SelectItem value="CHINA">الصين (China)</SelectItem>
+                  <SelectItem value="DUBAI">دبي (Dubai)</SelectItem>
+                  <SelectItem value="USA">أمريكا (USA)</SelectItem>
+                  <SelectItem value="TURKEY">تركيا (Turkey)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

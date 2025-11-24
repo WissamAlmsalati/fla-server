@@ -18,7 +18,7 @@ export async function fetchOrders(filters?: OrderFilters) {
     query = params.toString() ? `?${params.toString()}` : "";
   }
   const token = localStorage.getItem("token");
-  const response = await fetch(`/api/orders${query}`, { 
+  const response = await fetch(`/api/orders${query}`, {
     headers: {
       "Authorization": `Bearer ${token}`
     }
@@ -35,11 +35,12 @@ export async function createOrder(payload: {
   product_url?: string;
   cny_price?: number;
   weight?: number;
+  country?: string;
 }) {
   const token = localStorage.getItem("token");
   const response = await fetch("/api/orders", {
     method: "POST",
-    headers: { 
+    headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`
     },
@@ -62,7 +63,7 @@ export async function updateOrder(id: number, payload: {
   const token = localStorage.getItem("token");
   const response = await fetch(`/api/orders/${id}`, {
     method: "PATCH",
-    headers: { 
+    headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`
     },

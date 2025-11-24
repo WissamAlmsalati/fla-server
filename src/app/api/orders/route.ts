@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     const query = orderFiltersSchema.parse(Object.fromEntries(request.nextUrl.searchParams));
-    
+
     const where: any = {};
     if (user.role === "Customer" && user.customerId) {
       where.customerId = user.customerId;
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       if (exactMatch) {
         // If exact match found, return only that (respecting user permissions)
         if (user.role !== "Customer" || exactMatch.customerId === user.customerId) {
-           return NextResponse.json({
+          return NextResponse.json({
             data: [exactMatch],
             meta: parsePaginationMeta([exactMatch], query.limit),
           });
@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
         ...where,
         ...(query.status && { status: query.status as OrderStatus }),
         ...(query.customerId && { customerId: query.customerId }),
+        ...(query.country && { country: query.country }),
       },
       take: query.limit,
       cursor: query.cursor ? { id: Number(query.cursor) } : undefined,
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
         notes: body.notes,
         weight: body.weight,
         customerId: body.customer_id,
+        country: body.country,
       },
     });
     return NextResponse.json({ data: order }, { status: 201 });

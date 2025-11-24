@@ -94,11 +94,19 @@ export async function POST(request: Request) {
     });
 
     let nextCode = "KO219-FLL1";
+    let nextDubaiCode = "BSB FLL D1";
+    let nextUsaCode = "Global FLL 1";
+    let nextTurkeyCode = "ABUHAJ FLL 1";
+
     if (lastCustomer) {
       const match = lastCustomer.code.match(/KO219-FLL(\d+)/);
       if (match) {
         const lastNumber = parseInt(match[1]);
-        nextCode = `KO219-FLL${lastNumber + 1}`;
+        const nextNumber = lastNumber + 1;
+        nextCode = `KO219-FLL${nextNumber}`;
+        nextDubaiCode = `BSB FLL D${nextNumber}`;
+        nextUsaCode = `Global FLL ${nextNumber}`;
+        nextTurkeyCode = `ABUHAJ FLL ${nextNumber}`;
       }
     }
 
@@ -107,6 +115,9 @@ export async function POST(request: Request) {
         name: payload.name,
         userId: payload.userId ?? null,
         code: nextCode,
+        dubaiCode: nextDubaiCode,
+        usaCode: nextUsaCode,
+        turkeyCode: nextTurkeyCode,
       },
     });
 

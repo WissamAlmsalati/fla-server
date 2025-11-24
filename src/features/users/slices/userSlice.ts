@@ -15,6 +15,9 @@ export type User = {
   customer?: {
     id: number;
     code: string;
+    dubaiCode?: string;
+    usaCode?: string;
+    turkeyCode?: string;
     balanceUSD: number;
     balanceLYD: number;
     balanceCNY: number;
@@ -58,7 +61,7 @@ export const createUser = createAsyncThunk("users/createUser", async (data: Part
   const token = localStorage.getItem("token");
   const response = await fetch("/api/users", {
     method: "POST",
-    headers: { 
+    headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`
     },
@@ -75,7 +78,7 @@ export const updateUser = createAsyncThunk("users/updateUser", async ({ id, data
   const token = localStorage.getItem("token");
   const response = await fetch(`/api/users/${id}`, {
     method: "PUT",
-    headers: { 
+    headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`
     },
@@ -124,7 +127,7 @@ export const suspendUser = createAsyncThunk("users/suspendUser", async ({ id, su
     }
     throw new Error(errorMessage);
   }
-  
+
   // Try to parse JSON response, but if it's empty (204) or not JSON, just return the expected data
   let result;
   try {
@@ -134,7 +137,7 @@ export const suspendUser = createAsyncThunk("users/suspendUser", async ({ id, su
     // If parsing fails, assume success and return the expected data
     result = null;
   }
-  
+
   return { id, suspended };
 });
 

@@ -14,6 +14,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Pencil } from "lucide-react";
 
@@ -28,6 +35,7 @@ export function EditRateDialog({ rate }: EditRateDialogProps) {
   const [formData, setFormData] = useState({
     name: rate.name,
     price: rate.price.toString(),
+    country: rate.country || "CHINA",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,6 +47,7 @@ export function EditRateDialog({ rate }: EditRateDialogProps) {
         data: {
           name: formData.name,
           price: parseFloat(formData.price),
+          country: formData.country,
         },
       })).unwrap();
       toast.success("تم تحديث التصنيف بنجاح");
@@ -73,6 +82,25 @@ export function EditRateDialog({ rate }: EditRateDialogProps) {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="country" className="text-right">
+                البلد
+              </Label>
+              <Select
+                value={formData.country}
+                onValueChange={(value) => setFormData({ ...formData, country: value })}
+              >
+                <SelectTrigger dir="rtl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent dir="rtl">
+                  <SelectItem value="CHINA">الصين (China)</SelectItem>
+                  <SelectItem value="DUBAI">دبي (Dubai)</SelectItem>
+                  <SelectItem value="USA">أمريكا (USA)</SelectItem>
+                  <SelectItem value="TURKEY">تركيا (Turkey)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="price" className="text-right">

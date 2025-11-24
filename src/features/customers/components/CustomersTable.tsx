@@ -25,7 +25,10 @@ const exportCustomers = (customers: any[]) => {
     "user.name": "الاسم",
     "user.email": "البريد الإلكتروني",
     "user.mobile": "رقم الهاتف",
-    code: "كود الشحن"
+    code: "كود الصين",
+    dubaiCode: "كود دبي",
+    usaCode: "كود أمريكا",
+    turkeyCode: "كود تركيا"
   };
   
   exportToCSV(customers, columnMappings, "customers");
@@ -81,7 +84,6 @@ export function CustomersTable({ filters }: CustomersTableProps) {
             <TableHead className="text-right">الاسم</TableHead>
             <TableHead className="text-right">البريد الإلكتروني</TableHead>
             <TableHead className="text-right">رقم الهاتف</TableHead>
-            <TableHead className="text-right">كود الشحن</TableHead>
             <TableHead className="text-right">إجراءات</TableHead>
           </TableRow>
         </TableHeader>
@@ -99,11 +101,6 @@ export function CustomersTable({ filters }: CustomersTableProps) {
                 </TableCell>
                 <TableCell>{customer.user.email}</TableCell>
                 <TableCell>{customer.user.mobile || "-"}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="font-mono">
-                    {customer.code}
-                  </Badge>
-                </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-2">
                     <EditUserDialog user={customer.user as unknown as User} />

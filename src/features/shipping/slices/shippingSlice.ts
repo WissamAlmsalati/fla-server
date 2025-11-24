@@ -7,6 +7,7 @@ export type ShippingRate = {
   type: ShippingType;
   name: string;
   price: number;
+  country?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -45,7 +46,7 @@ export const loadRates = createAsyncThunk("shipping/loadRates", async (filters?:
 
 export const createRate = createAsyncThunk(
   "shipping/createRate",
-  async (data: { type: ShippingType; name: string; price: number }) => {
+  async (data: { type: ShippingType; name: string; price: number; country?: string }) => {
     const token = localStorage.getItem("token");
     const response = await fetch("/api/shipping-rates", {
       method: "POST",

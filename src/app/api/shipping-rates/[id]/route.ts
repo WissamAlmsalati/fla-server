@@ -6,6 +6,7 @@ import { z } from "zod";
 const updateRateSchema = z.object({
   name: z.string().min(1).optional(),
   price: z.number().min(0).optional(),
+  country: z.string().optional(),
 });
 
 export async function PUT(

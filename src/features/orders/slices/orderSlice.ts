@@ -22,9 +22,13 @@ export type Order = {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  country?: string;
   customer?: {
     id: number;
     code: string;
+    dubaiCode?: string;
+    usaCode?: string;
+    turkeyCode?: string;
     user: {
       id: number;
       name: string;

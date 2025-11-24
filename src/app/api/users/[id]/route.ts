@@ -55,6 +55,9 @@ export async function GET(
           select: {
             id: true,
             code: true,
+            dubaiCode: true,
+            usaCode: true,
+            turkeyCode: true,
             balanceUSD: true,
             balanceLYD: true,
             balanceCNY: true
@@ -138,7 +141,7 @@ export async function PUT(
         if (!customerExists) {
           const random = Math.floor(1000 + Math.random() * 9000);
           const shippingCode = `LY-${random}`;
-          
+
           await tx.customer.create({
             data: {
               name: user.name,

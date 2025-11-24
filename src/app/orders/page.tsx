@@ -19,6 +19,7 @@ export default function Page() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [countryFilter, setCountryFilter] = useState("all");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [lastScanTime, setLastScanTime] = useState(0);
 
@@ -32,6 +33,7 @@ export default function Page() {
   const filters: Record<string, string | number> = {};
   if (debouncedSearch) filters.search = debouncedSearch;
   if (statusFilter && statusFilter !== "all") filters.status = statusFilter;
+  if (countryFilter && countryFilter !== "all") filters.country = countryFilter;
 
   return (
     <SidebarProvider
@@ -75,6 +77,18 @@ export default function Page() {
                     <SelectItem value="arrived_libya">وصل إلى ليبيا</SelectItem>
                     <SelectItem value="ready_for_pickup">جاهز للاستلام</SelectItem>
                     <SelectItem value="delivered">تم التسليم</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={countryFilter} onValueChange={setCountryFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="جميع المناطق" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع المناطق</SelectItem>
+                    <SelectItem value="CHINA">الصين (China)</SelectItem>
+                    <SelectItem value="DUBAI">دبي (Dubai)</SelectItem>
+                    <SelectItem value="USA">أمريكا (USA)</SelectItem>
+                    <SelectItem value="TURKEY">تركيا (Turkey)</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button

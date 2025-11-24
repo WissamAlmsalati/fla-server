@@ -76,6 +76,7 @@ export function ShippingRatesTable({ type, filters }: ShippingRatesTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead className="text-right">التصنيف</TableHead>
+            <TableHead className="text-right">البلد</TableHead>
             <TableHead className="text-right">
               {type === "AIR" ? "السعر (USD / 1 kg)" : "السعر (USD / 1 cbm)"}
             </TableHead>
@@ -86,6 +87,16 @@ export function ShippingRatesTable({ type, filters }: ShippingRatesTableProps) {
           {filteredRates.map((rate) => (
             <TableRow key={rate.id}>
               <TableCell className="font-medium">{rate.name}</TableCell>
+              <TableCell>
+                {(() => {
+                  switch (rate.country) {
+                    case "DUBAI": return "دبي (Dubai)";
+                    case "USA": return "أمريكا (USA)";
+                    case "TURKEY": return "تركيا (Turkey)";
+                    default: return "الصين (China)";
+                  }
+                })()}
+              </TableCell>
               <TableCell>
                 ${rate.price} <span className="text-muted-foreground text-xs">/ {rate.type === "AIR" ? "kg" : "cbm"}</span>
               </TableCell>
@@ -106,7 +117,7 @@ export function ShippingRatesTable({ type, filters }: ShippingRatesTableProps) {
           ))}
           {filteredRates.length === 0 && (
             <TableRow>
-              <TableCell colSpan={3} className="text-center h-24">
+              <TableCell colSpan={4} className="text-center h-24">
                 لا يوجد تصنيفات
               </TableCell>
             </TableRow>

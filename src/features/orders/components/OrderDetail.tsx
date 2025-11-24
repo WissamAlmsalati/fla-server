@@ -287,7 +287,15 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <span className="text-muted-foreground">كود العميل</span>
                     <Badge variant="secondary" className="font-mono">
-                      {order.customer.code}
+                      {(() => {
+                        if (!order.customer) return "-";
+                        switch (order.country) {
+                          case "DUBAI": return order.customer.dubaiCode || order.customer.code;
+                          case "USA": return order.customer.usaCode || order.customer.code;
+                          case "TURKEY": return order.customer.turkeyCode || order.customer.code;
+                          default: return order.customer.code;
+                        }
+                      })()}
                     </Badge>
                   </div>
                 </div>

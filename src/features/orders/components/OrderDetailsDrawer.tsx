@@ -99,7 +99,9 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
   if (!order) return null;
 
   const showShippingFields = status === "arrived_to_china" || status === "shipping_to_libya";
-  const filteredRates = rates.filter(r => !shippingType || r.type === shippingType);
+  const filteredRates = rates.filter(r => 
+    (!shippingType || r.type === shippingType) && r.country === (order.country || "CHINA")
+  );
   const selectedRate = rates.find(r => r.id.toString() === shippingRateId);
   const calculatedCost = (weight && selectedRate) ? parseFloat(weight) * selectedRate.price : 0;
 
@@ -170,7 +172,15 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                   {order.customer?.user?.name || "-"}
                 </span>
                 <span className="text-xs text-muted-foreground font-mono">
-                  {order.customer?.code}
+                  {(() => {
+                    if (!order.customer) return "-";
+                    switch (order.country) {
+                      case "DUBAI": return order.customer.dubaiCode || order.customer.code;
+                      case "USA": return order.customer.usaCode || order.customer.code;
+                      case "TURKEY": return order.customer.turkeyCode || order.customer.code;
+                      default: return order.customer.code;
+                    }
+                  })()}
                 </span>
               </div>
               <div className="flex flex-col gap-1 p-3 bg-muted/50 rounded-lg">

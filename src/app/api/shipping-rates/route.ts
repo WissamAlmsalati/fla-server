@@ -7,6 +7,7 @@ const createRateSchema = z.object({
   type: z.enum(["AIR", "SEA"]),
   name: z.string().min(1),
   price: z.number().min(0),
+  country: z.string().default("CHINA"),
 });
 
 export async function GET(request: Request) {

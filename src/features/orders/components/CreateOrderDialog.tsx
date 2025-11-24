@@ -22,13 +22,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
-import { addOrder } from "../slices/orderSlice";
-import { fetchCustomers } from "@/features/customers/slices/customerSlice";
-import { toast } from "sonner";
-import { Plus, Scan, Check, ChevronsUpDown, Upload, Loader2 } from "lucide-react";
-import { ScannerDialog } from "@/components/scanner-dialog";
-import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Command,
   CommandEmpty,
@@ -42,13 +42,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
+import { addOrder } from "../slices/orderSlice";
+import { fetchCustomers } from "@/features/customers/slices/customerSlice";
+import { toast } from "sonner";
+import { Check, ChevronsUpDown, Loader2, Scan, Upload, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ScannerDialog } from "@/components/scanner-dialog";
 
 const createOrderSchema = z.object({
   name: z.string().min(1, "اسم الطلب مطلوب"),
   tracking_number: z.string().min(1, "رقم التتبع مطلوب"),
   customer_id: z.string().min(1, "العميل مطلوب"),
-  product_url: z.string().url("رابط غير صالح").optional().or(z.literal("")),
-  usd_price: z.coerce.number().min(0, "السعر يجب أن يكون 0 أو أكثر"),
+  product_url: z.string().optional(),
+  usd_price: z.coerce.number().positive("السعر يجب أن يكون أكبر من 0"),
   notes: z.string().optional(),
 });
 
@@ -59,14 +66,11 @@ export function CreateOrderDialog() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanningImage, setScanningImage] = useState(false);
   const [customerOpen, setCustomerOpen] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState<"CHINA" | "DUBAI" | "USA" | "TURKEY">("CHINA");
+  
   const dispatch = useReduxDispatch();
   const { list: customers } = useReduxSelector((state) => state.customers);
-  const qrInputRef = useRef<HTMLInputElement | null>(null);
-
-  // Filter to only show valid customers (exclude system users if they have customer records)
-  const filteredCustomers = customers.filter(
-    (c) => !c.user || c.user.role === "CUSTOMER"
-  );
+  const qrInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CreateOrderFormValues>({
     resolver: zodResolver(createOrderSchema),
@@ -90,9 +94,13 @@ export function CreateOrderDialog() {
     try {
       await dispatch(
         addOrder({
-          ...data,
+          name: data.name,
+          tracking_number: data.tracking_number,
           customer_id: parseInt(data.customer_id),
+          usd_price: data.usd_price,
+          notes: data.notes || undefined,
           product_url: data.product_url || undefined,
+          country: selectedRegion,
         })
       ).unwrap();
       toast.success("تم إنشاء الطلب بنجاح");
@@ -103,11 +111,26 @@ export function CreateOrderDialog() {
     }
   };
 
+  // Helper to get the correct code based on region
+  const getCustomerCode = (customer: any) => {
+    switch (selectedRegion) {
+      case "DUBAI": return customer.dubaiCode || "-";
+      case "USA": return customer.usaCode || "-";
+      case "TURKEY": return customer.turkeyCode || "-";
+      default: return customer.code;
+    }
+  };
+
+  const filteredCustomers = customers.filter((customer) => {
+    const code = getCustomerCode(customer);
+    return code && code !== "-";
+  });
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
           إضافة طلب
         </Button>
       </DialogTrigger>
@@ -282,6 +305,27 @@ export function CreateOrderDialog() {
                 </FormItem>
               )}
             />
+
+            <FormItem>
+              <FormLabel>منطقة الشحن</FormLabel>
+              <Select
+                value={selectedRegion}
+                onValueChange={(value: any) => setSelectedRegion(value)}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر المنطقة" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="CHINA">الصين (China)</SelectItem>
+                  <SelectItem value="DUBAI">دبي (Dubai)</SelectItem>
+                  <SelectItem value="USA">أمريكا (USA)</SelectItem>
+                  <SelectItem value="TURKEY">تركيا (Turkey)</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormItem>
+
             <FormField
               control={form.control}
               name="customer_id"
@@ -306,7 +350,7 @@ export function CreateOrderDialog() {
                                   (c) => c.id.toString() === field.value
                                 );
                                 return customer
-                                  ? `${customer.user?.name || customer.name} (${customer.code})`
+                                  ? `${customer.user?.name || customer.name} (${getCustomerCode(customer)})`
                                   : "اختر العميل";
                               })()
                             : "اختر العميل"}
@@ -316,31 +360,34 @@ export function CreateOrderDialog() {
                     </PopoverTrigger>
                     <PopoverContent className="w-[400px] p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="بحث عن عميل..." />
+                        <CommandInput placeholder={`بحث عن عميل (${selectedRegion === 'CHINA' ? 'كود الصين' : selectedRegion === 'DUBAI' ? 'كود دبي' : selectedRegion === 'USA' ? 'كود أمريكا' : 'كود تركيا'})...`} />
                         <CommandList>
                           <CommandEmpty>لم يتم العثور على عميل.</CommandEmpty>
                           <CommandGroup>
-                            {filteredCustomers.map((customer) => (
-                              <CommandItem
-                                value={`${customer.name || customer.user?.name} ${customer.code}`}
-                                key={customer.id}
-                                onSelect={() => {
-                                  form.setValue("customer_id", customer.id.toString());
-                                  setCustomerOpen(false);
-                                }}
-                                className="cursor-pointer"
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    customer.id.toString() === field.value
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                {customer.user?.name || customer.name} ({customer.code})
-                              </CommandItem>
-                            ))}
+                            {filteredCustomers.map((customer) => {
+                              const code = getCustomerCode(customer);
+                              return (
+                                <CommandItem
+                                  value={`${customer.name || customer.user?.name} ${code}`}
+                                  key={customer.id}
+                                  onSelect={() => {
+                                    form.setValue("customer_id", customer.id.toString());
+                                    setCustomerOpen(false);
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      customer.id.toString() === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {customer.user?.name || customer.name} ({code})
+                                </CommandItem>
+                              );
+                            })}
                           </CommandGroup>
                         </CommandList>
                       </Command>
