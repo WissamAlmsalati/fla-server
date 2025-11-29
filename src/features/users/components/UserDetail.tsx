@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import Image from "next/image";
-import { ArrowRight, Pencil, Trash2, Package, User as UserIcon, Mail, Phone, Shield, Calendar, Box, FileText, Image as ImageIcon, Wallet, TrendingUp, DollarSign, UserX, UserCheck } from "lucide-react";
+import { ArrowRight, Pencil, Trash2, Package, User as UserIcon, Mail, Phone, Shield, Calendar, Box, FileText, Image as ImageIcon, Wallet, TrendingUp, DollarSign, UserX, UserCheck, Copy, Check } from "lucide-react";
 import { EditUserDialog } from "./EditUserDialog";
 import { ManageWalletDialog } from "@/features/customers/components/ManageWalletDialog";
 import { CustomerOrders } from "./CustomerOrders";
@@ -38,6 +38,18 @@ export function UserDetail({ userId }: UserDetailProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const handleCopyCode = async (code: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      toast.success(`تم نسخ كود ${label}`);
+      setTimeout(() => setCopiedCode(null), 2000);
+    } catch (err) {
+      toast.error("فشل نسخ الكود");
+    }
+  };
 
   const fetchUser = async () => {
     try {
@@ -270,33 +282,89 @@ export function UserDetail({ userId }: UserDetailProps) {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {/* China Code */}
                         {user.customer.code && (
-                          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-dashed">
-                            <span className="text-xs text-muted-foreground">الصين:</span>
-                            <span className="font-mono font-medium text-sm">{user.customer.code}</span>
+                          <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/50 border border-dashed group hover:border-primary/50 transition-colors">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">الصين:</span>
+                              <span className="font-mono font-medium text-sm">{user.customer.code}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleCopyCode(user.customer!.code, "الصين")}
+                            >
+                              {copiedCode === user.customer.code ? (
+                                <Check className="h-3.5 w-3.5 text-green-500" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
                           </div>
                         )}
                         
                         {/* Dubai Code */}
                         {user.customer.dubaiCode && (
-                          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-dashed">
-                            <span className="text-xs text-muted-foreground">دبي:</span>
-                            <span className="font-mono font-medium text-sm">{user.customer.dubaiCode}</span>
+                          <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/50 border border-dashed group hover:border-primary/50 transition-colors">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">دبي:</span>
+                              <span className="font-mono font-medium text-sm">{user.customer.dubaiCode}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleCopyCode(user.customer!.dubaiCode!, "دبي")}
+                            >
+                              {copiedCode === user.customer.dubaiCode ? (
+                                <Check className="h-3.5 w-3.5 text-green-500" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
                           </div>
                         )}
                         
                         {/* USA Code */}
                         {user.customer.usaCode && (
-                          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-dashed">
-                            <span className="text-xs text-muted-foreground">أمريكا:</span>
-                            <span className="font-mono font-medium text-sm">{user.customer.usaCode}</span>
+                          <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/50 border border-dashed group hover:border-primary/50 transition-colors">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">أمريكا:</span>
+                              <span className="font-mono font-medium text-sm">{user.customer.usaCode}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleCopyCode(user.customer!.usaCode!, "أمريكا")}
+                            >
+                              {copiedCode === user.customer.usaCode ? (
+                                <Check className="h-3.5 w-3.5 text-green-500" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
                           </div>
                         )}
                         
                         {/* Turkey Code */}
                         {user.customer.turkeyCode && (
-                          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-dashed">
-                            <span className="text-xs text-muted-foreground">تركيا:</span>
-                            <span className="font-mono font-medium text-sm">{user.customer.turkeyCode}</span>
+                          <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/50 border border-dashed group hover:border-primary/50 transition-colors">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">تركيا:</span>
+                              <span className="font-mono font-medium text-sm">{user.customer.turkeyCode}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleCopyCode(user.customer!.turkeyCode!, "تركيا")}
+                            >
+                              {copiedCode === user.customer.turkeyCode ? (
+                                <Check className="h-3.5 w-3.5 text-green-500" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
                           </div>
                         )}
                       </div>
