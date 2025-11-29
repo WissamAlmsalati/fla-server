@@ -25,9 +25,11 @@ import {
   Clock,
   MapPin,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  MessageSquare
 } from "lucide-react";
 import { OrderDetailsDrawer } from "./OrderDetailsDrawer";
+import { OrderChat } from "./OrderChat";
 import { generateInvoicePDF } from "@/lib/generateInvoicePDF";
 
 interface OrderDetailProps {
@@ -281,7 +283,7 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <span className="text-muted-foreground">الاسم</span>
                     <span className="font-bold cursor-pointer hover:text-primary transition-colors">
-                      {order.customer.user.name}
+                      {order.customer.user?.name || `عميل #${order.customer.id}`}
                     </span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -326,6 +328,19 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
               </CardContent>
             </Card>
           )}
+
+          {/* Chat Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                المحادثة
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <OrderChat orderId={order.id} />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column - Status Timeline */}

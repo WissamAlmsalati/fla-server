@@ -101,6 +101,7 @@ model Order {
   shippingRateId Int?
   shippingRate   ShippingRate? @relation(fields: [shippingRateId], references: [id])
   shippingCost   Float?
+  country        String?        @default("CHINA")
 }
 
 model OrderLog {
@@ -145,9 +146,14 @@ model OrderMessage {
   orderId   Int
   authorId  Int
   content   String
+  imageUrl  String?
+  readBy    Int[]    @default([])
   createdAt DateTime @default(now())
   order     Order    @relation(fields: [orderId], references: [id])
   author    User     @relation(fields: [authorId], references: [id])
+  replyToId Int?
+  replyTo   OrderMessage? @relation("ReplyTo", fields: [replyToId], references: [id])
+  replies   OrderMessage[] @relation("ReplyTo")
 }
 
 model ShippingRate {
@@ -158,6 +164,7 @@ model ShippingRate {
   orders    Order[]
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+  country   String?      @default("CHINA")
 }
 
 model Transaction {
@@ -172,4 +179,24 @@ model Transaction {
   notes         String?
   createdBy     Int?
   createdAt     DateTime        @default(now())
+}
+
+model Announcement {
+  id        Int      @id @default(autoincrement())
+  title     String
+  imageUrl  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PendingRegistration {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  mobile       String   @unique
+  otp          String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
 }

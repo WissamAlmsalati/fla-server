@@ -43,7 +43,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
-import { addOrder } from "../slices/orderSlice";
+import { addOrder, loadOrders } from "../slices/orderSlice";
 import { fetchCustomers } from "@/features/customers/slices/customerSlice";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown, Loader2, Scan, Upload, Plus } from "lucide-react";
@@ -103,10 +103,15 @@ export function CreateOrderDialog() {
           country: selectedRegion,
         })
       ).unwrap();
+      
+      // Reload orders from database to ensure data is persisted
+      await dispatch(loadOrders()).unwrap();
+      
       toast.success("تم إنشاء الطلب بنجاح");
       setOpen(false);
       form.reset();
     } catch (error: any) {
+      console.error("Failed to create order:", error);
       toast.error(error.message || "فشل إنشاء الطلب");
     }
   };

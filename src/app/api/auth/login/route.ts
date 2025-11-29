@@ -32,14 +32,15 @@ export async function POST(request: Request) {
       tokenVersion: user.tokenVersion,
     });
 
-    const response = NextResponse.json({ 
+    const response = NextResponse.json({
       message: "Authenticated",
       accessToken, // Return the token to the client
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        customerId: user.customerId
       }
     });
     response.cookies.set("access_token", accessToken, {

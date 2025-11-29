@@ -4,7 +4,7 @@ export const orderFiltersSchema = z.object({
   status: z.string().optional(),
   customerId: z.coerce.number().optional(),
   search: z.string().optional(),
-  limit: z.coerce.number().min(10).max(50).default(20),
+  limit: z.coerce.number().min(10).max(1000).default(1000), // Increased max to 1000 for pagination
   cursor: z.string().optional(),
   country: z.string().optional(),
 });

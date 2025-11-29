@@ -22,11 +22,16 @@ export default function Page() {
   const [countryFilter, setCountryFilter] = useState("all");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [lastScanTime, setLastScanTime] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
+    if (search !== debouncedSearch) {
+      setIsSearching(true);
+    }
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
-    }, 500);
+      setIsSearching(false);
+    }, 300); // Reduced from 500ms to 300ms for faster search
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -57,7 +62,7 @@ export default function Page() {
 
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Search className={`absolute right-2.5 top-2.5 h-4 w-4 ${isSearching ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
                   <Input
                     placeholder="بحث برقم التتبع، اسم العميل، أو اسم الطلب..."
                     className="pr-8"

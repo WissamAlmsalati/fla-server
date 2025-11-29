@@ -17,6 +17,7 @@ export type Order = {
     name: string;
     type: string;
     price: number;
+    country?: string;
   };
   productUrl?: string;
   notes?: string;
@@ -29,11 +30,12 @@ export type Order = {
     dubaiCode?: string;
     usaCode?: string;
     turkeyCode?: string;
-    user: {
+    user?: {
       id: number;
       name: string;
     };
   };
+  unreadCount?: number;
 };
 
 type OrdersState = {

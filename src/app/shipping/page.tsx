@@ -13,10 +13,18 @@ import { AddRateDialog } from "@/features/shipping/components/AddRateDialog";
 import { Plane, Ship } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Page() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [countryFilter, setCountryFilter] = useState("all");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -24,6 +32,11 @@ export default function Page() {
     }, 500);
     return () => clearTimeout(timer);
   }, [search]);
+
+  const filters: any = { search: debouncedSearch };
+  if (countryFilter !== "all") {
+    filters.country = countryFilter;
+  }
 
   return (
     <SidebarProvider
@@ -55,6 +68,18 @@ export default function Page() {
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
+                <Select value={countryFilter} onValueChange={setCountryFilter}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="تصفية حسب الدولة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الدول</SelectItem>
+                    <SelectItem value="CHINA">الصين</SelectItem>
+                    <SelectItem value="DUBAI">دبي</SelectItem>
+                    <SelectItem value="USA">أمريكا</SelectItem>
+                    <SelectItem value="TURKEY">تركيا</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <Tabs defaultValue="AIR" className="w-full" dir="rtl">
@@ -69,10 +94,10 @@ export default function Page() {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="AIR" className="mt-6">
-                  <ShippingRatesTable type="AIR" filters={{ search: debouncedSearch }} />
+                  <ShippingRatesTable type="AIR" filters={filters} />
                 </TabsContent>
                 <TabsContent value="SEA" className="mt-6">
-                  <ShippingRatesTable type="SEA" filters={{ search: debouncedSearch }} />
+                  <ShippingRatesTable type="SEA" filters={filters} />
                 </TabsContent>
               </Tabs>
             </div>

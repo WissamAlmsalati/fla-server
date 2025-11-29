@@ -36,10 +36,8 @@ export function ShippingRatesTable({ type, filters }: ShippingRatesTableProps) {
   };
 
   useEffect(() => {
-    if (status === "idle") {
-      dispatch(loadRates(filters));
-    }
-  }, [dispatch, status, JSON.stringify(filters)]);
+    dispatch(loadRates(filters));
+  }, [dispatch, JSON.stringify(filters)]);
 
   const handleDelete = async (id: number) => {
     if (confirm("هل أنت متأكد من حذف هذا التصنيف؟")) {

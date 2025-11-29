@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const query = orderFiltersSchema.parse(Object.fromEntries(request.nextUrl.searchParams));
 
     const where: any = {};
-    if (user.role === "Customer" && user.customerId) {
+    if (user.role === "CUSTOMER" && user.customerId) {
       where.customerId = user.customerId;
     }
 
@@ -32,9 +32,21 @@ export async function GET(request: NextRequest) {
 
       if (exactMatch) {
         // If exact match found, return only that (respecting user permissions)
-        if (user.role !== "Customer" || exactMatch.customerId === user.customerId) {
+        if (user.role !== "CUSTOMER" || exactMatch.customerId === user.customerId) {
+          const unreadCount = await prisma.orderMessage.count({
+            where: {
+              orderId: exactMatch.id,
+              authorId: { not: user.sub },
+              NOT: {
+                readBy: {
+                  has: user.sub,
+                },
+              },
+            },
+          });
+
           return NextResponse.json({
-            data: [exactMatch],
+            data: [{ ...exactMatch, unreadCount }],
             meta: parsePaginationMeta([exactMatch], query.limit),
           });
         }
@@ -75,8 +87,30 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Calculate unread message counts for each order
+    const ordersWithUnreadCounts = await Promise.all(
+      orders.map(async (order) => {
+        const unreadCount = await prisma.orderMessage.count({
+          where: {
+            orderId: order.id,
+            authorId: { not: user.sub },
+            NOT: {
+              readBy: {
+                has: user.sub,
+              },
+            },
+          },
+        });
+
+        return {
+          ...order,
+          unreadCount,
+        };
+      })
+    );
+
     return NextResponse.json({
-      data: orders,
+      data: ordersWithUnreadCounts,
       meta: parsePaginationMeta(orders, query.limit),
     });
   } catch (error) {

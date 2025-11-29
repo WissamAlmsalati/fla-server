@@ -214,7 +214,7 @@ export function UserDetail({ userId }: UserDetailProps) {
           </TabsList>
         </div>
 
-        <TabsContent value="details" className="mt-6">
+        <TabsContent value="details" className="mt-6 data-[state=inactive]:hidden" forceMount>
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Left Column - User Info & Wallet (2/3 width) */}
             <div className="lg:col-span-2 space-y-6">
@@ -485,7 +485,7 @@ export function UserDetail({ userId }: UserDetailProps) {
           </div>
         </TabsContent>
 
-        <TabsContent value="orders" className="mt-6">
+        <TabsContent value="orders" className="mt-6 data-[state=inactive]:hidden" forceMount>
           <Card className="shadow-none">
             <CardHeader className="border-b">
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -510,7 +510,7 @@ export function UserDetail({ userId }: UserDetailProps) {
 
         {user.role === "CUSTOMER" && user.customer?.id && (
           <>
-            <TabsContent value="transactions" className="mt-6">
+            <TabsContent value="transactions" className="mt-6 data-[state=inactive]:hidden" forceMount>
               <Card className="shadow-none">
                 <CardHeader className="border-b">
                   <CardTitle className="flex items-center gap-2 text-lg">
@@ -524,7 +524,7 @@ export function UserDetail({ userId }: UserDetailProps) {
               </Card>
             </TabsContent>
 
-            <TabsContent value="reports" className="mt-6">
+            <TabsContent value="reports" className="mt-6 data-[state=inactive]:hidden" forceMount>
               <TransactionReports customerId={user.customer.id} />
             </TabsContent>
           </>

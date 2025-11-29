@@ -81,3 +81,38 @@ export async function fetchOrder(id: number) {
   });
   return handleResponse<unknown>(response);
 }
+
+export async function fetchMessages(orderId: number) {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`/api/orders/${orderId}/messages`, {
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
+  });
+  return handleResponse<{ data: any[] }>(response);
+}
+
+export async function sendMessage(orderId: number, content: string, image?: File | null, replyToId?: number) {
+  const token = localStorage.getItem("token");
+  const formData = new FormData();
+
+  // Always append content, even if empty (for image-only messages)
+  formData.append("content", content || "");
+
+  if (image) {
+    formData.append("image", image);
+  }
+
+  if (replyToId) {
+    formData.append("replyToId", replyToId.toString());
+  }
+
+  const response = await fetch(`/api/orders/${orderId}/messages`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`
+    },
+    body: formData,
+  });
+  return handleResponse<{ data: any }>(response);
+}

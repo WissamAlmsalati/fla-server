@@ -125,14 +125,37 @@ export async function POST(request: NextRequest) {
 // GET /api/transactions - Get transactions with filters
 export async function GET(request: NextRequest) {
     try {
-        await requireAuth(request);
+        const user = await requireAuth(request);
 
         const { searchParams } = new URL(request.url);
-        const customerId = searchParams.get("customerId");
+        let customerId = searchParams.get("customerId");
         const currency = searchParams.get("currency");
         const type = searchParams.get("type");
         const startDate = searchParams.get("startDate");
         const endDate = searchParams.get("endDate");
+
+        // If user is CUSTOMER and no customerId provided, use their own customerId
+        if (user.role === "CUSTOMER" && !customerId) {
+            let userCustomerId: number | null = user.customerId;
+
+            // If customerId not in token, get from database
+            if (!userCustomerId) {
+                const dbUser = await prisma.user.findUnique({
+                    where: { id: user.sub },
+                    include: { customer: true }
+                });
+                userCustomerId = dbUser?.customer?.id || null;
+            }
+
+            if (!userCustomerId) {
+                return NextResponse.json(
+                    { error: "Customer account not found" },
+                    { status: 404 }
+                );
+            }
+
+            customerId = userCustomerId.toString();
+        }
 
         if (!customerId) {
             return NextResponse.json(

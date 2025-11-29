@@ -160,12 +160,6 @@ export function OverviewChart() {
   return (
     <Card className="col-span-1">
       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
-        <div className="grid flex-1 gap-1 text-center sm:text-right">
-          <CardTitle>إحصائيات الطلبات</CardTitle>
-          <CardDescription>
-            عرض إجمالي الطلبات والزوار
-          </CardDescription>
-        </div>
         <Select value={timeRange} onValueChange={setTimeRange}>
           <SelectTrigger
             className="w-[160px] rounded-lg sm:ml-auto"

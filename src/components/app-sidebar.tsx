@@ -56,7 +56,7 @@ const data = {
       icon: Package,
     },
     {
-      name: "مخزن الصين",
+      name: "المخزن الخارجي",
       url: "/warehouses/china",
       icon: Warehouse,
     },
@@ -98,6 +98,13 @@ const data = {
       icon: Truck,
     },
   ],
+  mobileManagement: [
+    {
+      name: "الإعلانات",
+      url: "/announcements",
+      icon: MessageSquare,
+    },
+  ],
 
 }
 
@@ -129,6 +136,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={data.navMain} />
         <NavDocuments items={data.shipmentManagement} title="إدارة الشحنات" />
         <NavDocuments items={data.userManagement} title="إدارة المستخدمين" />
+        <NavDocuments items={data.mobileManagement} title="إدارة التطبيق" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

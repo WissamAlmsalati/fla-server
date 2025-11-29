@@ -8,6 +8,7 @@ import userReducer from "@/features/users/slices/userSlice";
 import customerReducer from "@/features/customers/slices/customerSlice";
 import shippingReducer from "@/features/shipping/slices/shippingSlice";
 import transactionReducer from "@/features/transactions/slices/transactionSlice";
+import announcementReducer from "@/features/announcements/slices/announcementSlice";
 
 export const rootReducer = combineReducers({
   auth: authReducer,
@@ -19,4 +20,5 @@ export const rootReducer = combineReducers({
   customers: customerReducer,
   shipping: shippingReducer,
   transactions: transactionReducer,
+  announcements: announcementReducer,
 });

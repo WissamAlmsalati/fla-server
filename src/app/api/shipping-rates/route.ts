@@ -15,6 +15,7 @@ export async function GET(request: Request) {
     await requireAuth(request);
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
+    const country = searchParams.get("country");
 
     const where: any = {};
     if (search) {
@@ -22,6 +23,9 @@ export async function GET(request: Request) {
         { name: { contains: search, mode: "insensitive" } },
         { type: { contains: search, mode: "insensitive" } },
       ];
+    }
+    if (country) {
+      where.country = country;
     }
 
     const rates = await prisma.shippingRate.findMany({
