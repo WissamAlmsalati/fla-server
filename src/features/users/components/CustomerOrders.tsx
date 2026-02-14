@@ -70,7 +70,7 @@ export function CustomerOrders({ customerId }: CustomerOrdersProps) {
         if (response.data && response.data.length > 0) {
           const firstOrder = response.data[0] as Order;
           if (firstOrder.customer) {
-            setCustomerName(firstOrder.customer.user.name);
+            setCustomerName(firstOrder.customer.user?.name ?? "");
           }
         }
       } catch (err: any) {

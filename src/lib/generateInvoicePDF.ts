@@ -206,7 +206,7 @@ export const generateInvoicePDF = async (order: Order) => {
             ${order.customer ? `
               <div class="info-item">
                 <span class="info-label">الاسم:</span>
-                <span class="info-value">${order.customer.user.name}</span>
+                <span class="info-value">${order.customer.user?.name ?? "-"}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">كود العميل:</span>

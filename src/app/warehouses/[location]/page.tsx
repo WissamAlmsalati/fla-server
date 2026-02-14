@@ -26,7 +26,7 @@ import {
 
 const locationConfig: Record<string, { statusFilter: string; title: string }> = {
   purchased: { statusFilter: "purchased", title: "تم الشراء" },
-  china: { statusFilter: "arrived_to_china", title: "طلبات مخزن الصين" },
+  china: { statusFilter: "arrived_to_china", title: "المخزن الخارجي" },
   libya: { statusFilter: "arrived_libya", title: "طلبات مخزن ليبيا" },
   shipping: { statusFilter: "shipping_to_libya", title: "جاري الشحن لليبيا" },
   ready: { statusFilter: "ready_for_pickup", title: "جاهز للاستلام" },

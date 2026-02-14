@@ -72,7 +72,7 @@ const exportOrders = (orders: Order[]) => {
   exportToCSV(dataToExport, columnMappings, "orders");
 };
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 10;
 
 export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps) {
   const router = useRouter();

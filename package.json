@@ -10,7 +10,8 @@
     "lint": "eslint",
     "db:generate": "prisma generate",
     "db:seed": "tsx ./src/db/prisma/seed.ts",
-    "seed:orders": "tsx ./scripts/seed-orders.ts"
+    "seed:orders": "tsx ./scripts/seed-orders.ts",
+    "db:seed:prod": "tsx ./src/db/prisma/seed-prod.ts"
   },
   "prisma": {
     "seed": "npx tsx src/db/prisma/seed.ts"
