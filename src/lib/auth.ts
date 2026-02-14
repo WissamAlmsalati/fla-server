@@ -16,7 +16,7 @@ export async function requireAuth(request: Request) {
   if (!token) {
     const cookieHeader = request.headers.get("cookie");
     if (cookieHeader) {
-      const cookies = cookieHeader.split(";").reduce((acc, cookie) => {
+      const cookies = cookieHeader.split(";").reduce((acc: Record<string, string>, cookie) => {
         const [key, value] = cookie.trim().split("=");
         acc[key] = value;
         return acc;

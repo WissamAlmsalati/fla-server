@@ -82,12 +82,12 @@ export async function GET(request: NextRequest) {
         };
 
         // Format the response
-        const byStatus = statusStats.reduce((acc, curr) => {
+        const byStatus = statusStats.reduce((acc: Record<string, number>, curr) => {
             acc[curr.status] = curr._count.id;
             return acc;
         }, {} as Record<string, number>);
 
-        const byCountry = countryStats.reduce((acc, curr) => {
+        const byCountry = countryStats.reduce((acc: Record<string, number>, curr) => {
             const country = curr.country || "UNKNOWN";
             acc[country] = curr._count.id;
             return acc;
