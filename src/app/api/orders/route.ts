@@ -4,7 +4,6 @@ import { orderFiltersSchema, createOrderSchema } from "@/lib/validation";
 import { parsePaginationMeta } from "@/lib/pagination";
 import { requireAuth } from "@/lib/auth";
 import { requireRole } from "@/lib/rbac";
-import { OrderStatus } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   try {
@@ -92,7 +91,7 @@ export async function GET(request: NextRequest) {
     const orders = await prisma.order.findMany({
       where: {
         ...where,
-        ...(query.status && { status: query.status as OrderStatus }),
+        ...(query.status && { status: query.status as string }),
         // Only allow admins/staff to filter by customerId - customers already have it forced
         ...(query.customerId && user.role !== "CUSTOMER" && { customerId: query.customerId }),
         ...(query.country && { country: query.country }),
