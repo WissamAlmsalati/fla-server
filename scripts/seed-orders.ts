@@ -58,7 +58,7 @@ async function seedOrders() {
         }
 
         // Try to find 'wissam' customer first, otherwise use first customer
-        const wissamCustomer = customers.find(c => c.user?.name?.toLowerCase().includes('wissam'));
+        const wissamCustomer = customers.find((c: typeof customers[number]) => c.user?.name?.toLowerCase().includes('wissam'));
         const mainCustomer = wissamCustomer || customers[0];
         console.log(`Assigning all orders to customer: ${mainCustomer.user?.name || mainCustomer.name} (ID: ${mainCustomer.id})`);
 
