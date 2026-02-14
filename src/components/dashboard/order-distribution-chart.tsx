@@ -17,12 +17,35 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-const COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
+const COUNTRY_COLORS: Record<string, string> = {
+  "CHINA": "#ef4444", // Red
+  "china": "#ef4444",
+  "USA": "#3b82f6", // Blue
+  "usa": "#3b82f6",
+  "TURKEY": "#f59e0b", // Amber
+  "turkey": "#f59e0b",
+  "DUBAI": "#10b981", // Green
+  "dubai": "#10b981",
+  "UNKNOWN": "#6b7280", // Gray
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  "purchased": "#8b5cf6", // Purple
+  "arrived_to_china": "#ec4899", // Pink
+  "shipping_to_libya": "#f59e0b", // Amber
+  "arrived_libya": "#3b82f6", // Blue
+  "ready_for_pickup": "#10b981", // Green
+  "delivered": "#22c55e", // Bright Green
+  "canceled": "#ef4444", // Red
+  "cancelled": "#ef4444", // Red
+};
+
+const FALLBACK_COLORS = [
+  "#8b5cf6", // Purple
+  "#ec4899", // Pink
+  "#f59e0b", // Amber
+  "#3b82f6", // Blue
+  "#10b981", // Green
 ];
 
 interface OrderDistributionChartProps {
@@ -31,11 +54,16 @@ interface OrderDistributionChartProps {
 }
 
 export function OrderDistributionChart({ data, type }: OrderDistributionChartProps) {
-  const chartData = Object.entries(data).map(([key, value], index) => ({
-    name: formatLabel(key, type),
-    value,
-    fill: COLORS[index % COLORS.length],
-  }));
+  const chartData = Object.entries(data).map(([key, value], index) => {
+    const colorMap = type === "country" ? COUNTRY_COLORS : STATUS_COLORS;
+    const fill = colorMap[key] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+    
+    return {
+      name: formatLabel(key, type),
+      value,
+      fill,
+    };
+  });
 
   const totalOrders = React.useMemo(() => {
     return chartData.reduce((acc, curr) => acc + curr.value, 0);
@@ -44,7 +72,7 @@ export function OrderDistributionChart({ data, type }: OrderDistributionChartPro
   const chartConfig = chartData.reduce((acc, item, index) => {
     acc[item.name] = {
       label: item.name,
-      color: COLORS[index % COLORS.length],
+      color: item.fill,
     };
     return acc;
   }, {} as ChartConfig);
@@ -135,22 +163,26 @@ export function OrderDistributionChart({ data, type }: OrderDistributionChartPro
 function formatLabel(key: string, type: "country" | "status"): string {
   if (type === "country") {
     const countryMap: Record<string, string> = {
+      CHINA: "الصين",
       china: "الصين",
+      USA: "أمريكا",
       usa: "أمريكا",
+      TURKEY: "تركيا",
       turkey: "تركيا",
+      DUBAI: "دبي",
       dubai: "دبي",
       UNKNOWN: "غير محدد",
     };
     return countryMap[key] || key;
   } else {
     const statusMap: Record<string, string> = {
-      pending: "قيد الانتظار",
-      confirmed: "مؤكد",
+      purchased: "تم الشراء",
       arrived_to_china: "وصل للصين",
-      shipped_from_china: "شُحن من الصين",
+      shipping_to_libya: "قيد الشحن لليبيا",
       arrived_libya: "وصل ليبيا",
-      ready_for_delivery: "جاهز للتسليم",
+      ready_for_pickup: "جاهز للاستلام",
       delivered: "تم التسليم",
+      canceled: "ملغي",
       cancelled: "ملغي",
     };
     return statusMap[key] || key;

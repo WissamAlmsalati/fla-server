@@ -100,6 +100,11 @@ const data = {
   ],
   mobileManagement: [
     {
+      name: "طلبات إنشاء حساب",
+      url: "/account-requests",
+      icon: Users,
+    },
+    {
       name: "الإعلانات",
       url: "/announcements",
       icon: MessageSquare,

@@ -74,27 +74,26 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const customerId = parseInt(id);
 
-    // Check if customer has orders
-    const customerWithOrders = await prisma.customer.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        _count: {
-          select: { orders: true },
-        },
-      },
+    // Check if customer exists
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
     });
 
-    if (!customerWithOrders) {
+    if (!customer) {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
 
-    if (customerWithOrders._count.orders > 0) {
-      return NextResponse.json({ error: "Cannot delete customer with existing orders" }, { status: 400 });
-    }
+    // Use a transaction to update orders and delete customer
+    await prisma.$transaction(async (tx) => {
+      // Set customerId to null for all orders (using raw SQL since Prisma client may not be updated)
+      await tx.$executeRaw`UPDATE "Order" SET "customerId" = NULL WHERE "customerId" = ${customerId}`;
 
-    await prisma.customer.delete({
-      where: { id: parseInt(id) },
+      // Now delete the customer
+      await tx.customer.delete({
+        where: { id: customerId },
+      });
     });
 
     return NextResponse.json({ message: "Customer deleted successfully" });

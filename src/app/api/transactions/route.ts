@@ -64,13 +64,7 @@ export async function POST(request: NextRequest) {
         if (type === "DEPOSIT") {
             balanceAfter = balanceBefore + amount;
         } else {
-            // WITHDRAWAL
-            if (balanceBefore < amount) {
-                return NextResponse.json(
-                    { error: "Insufficient balance" },
-                    { status: 400 }
-                );
-            }
+            // WITHDRAWAL - Allow negative balance
             balanceAfter = balanceBefore - amount;
         }
 

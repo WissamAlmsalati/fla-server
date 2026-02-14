@@ -65,10 +65,7 @@ export function ManageWalletDialog({ customer, onSuccess }: ManageWalletDialogPr
       return;
     }
 
-    if (formData.type === "WITHDRAWAL" && amount > currentBalance) {
-      toast.error("الرصيد غير كافي");
-      return;
-    }
+    // Allow withdrawal even if balance is insufficient (can go negative)
 
     setLoading(true);
 
@@ -208,7 +205,7 @@ export function ManageWalletDialog({ customer, onSuccess }: ManageWalletDialogPr
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={loading || newBalance < 0}>
+            <Button type="submit" disabled={loading}>
               {loading ? "جار الحفظ..." : formData.type === "DEPOSIT" ? "إيداع" : "سحب"}
             </Button>
           </DialogFooter>

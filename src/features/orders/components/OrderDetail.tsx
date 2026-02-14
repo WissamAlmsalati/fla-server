@@ -31,19 +31,12 @@ import {
 import { OrderDetailsDrawer } from "./OrderDetailsDrawer";
 import { OrderChat } from "./OrderChat";
 import { generateInvoicePDF } from "@/lib/generateInvoicePDF";
+import { generateStickerLabel } from "@/lib/generateStickerLabel";
+import { getStatusLabel, getCountryName } from "@/lib/orderStatus";
 
 interface OrderDetailProps {
   orderId: number;
 }
-
-const statusMap: Record<string, string> = {
-  purchased: "تم الشراء",
-  arrived_to_china: "وصل إلى الصين",
-  shipping_to_libya: "جاري الشحن إلى ليبيا",
-  arrived_libya: "وصل إلى ليبيا",
-  ready_for_pickup: "جاهز للاستلام",
-  delivered: "تم التسليم",
-};
 
 const STATUS_ORDER = [
   "purchased",
@@ -63,7 +56,7 @@ const statusConfig: Record<string, { icon: any; color: string; bgColor: string }
   delivered: { icon: CheckCircle, color: "text-green-600", bgColor: "bg-green-50" },
 };
 
-const StatusTimeline = ({ currentStatus }: { currentStatus: string }) => {
+const StatusTimeline = ({ currentStatus, country }: { currentStatus: string; country?: string | null }) => {
   const currentIndex = STATUS_ORDER.indexOf(currentStatus);
 
   return (
@@ -91,7 +84,7 @@ const StatusTimeline = ({ currentStatus }: { currentStatus: string }) => {
                 </div>
                 <div className="flex-1">
                   <div className={`font-medium ${isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
-                    {statusMap[status]}
+                    {getStatusLabel(status, country)}
                   </div>
                   {isCurrent && (
                     <div className="text-sm text-muted-foreground">الحالة الحالية</div>
@@ -156,8 +149,16 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="text-xs px-4 py-2 capitalize border-2">
-            {statusMap[order.status] || order.status}
+            {getStatusLabel(order.status, order.country)}
           </Badge>
+          <Button
+            onClick={() => generateStickerLabel(order)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Truck className="h-4 w-4" />
+            طباعة ملصق
+          </Button>
           {order.status === "delivered" && (
             <Button
               onClick={() => generateInvoicePDF(order)}
@@ -212,6 +213,15 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
                   </div>
                 </div>
                 <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      بلد الشحن
+                    </span>
+                    <Badge variant="outline" className="font-bold">
+                      {getCountryName(order.country)}
+                    </Badge>
+                  </div>
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <span className="text-muted-foreground flex items-center gap-2">
                       <Truck className="h-4 w-4" />
@@ -345,7 +355,7 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
 
         {/* Right Column - Status Timeline */}
         <div className="lg:col-span-1">
-          <StatusTimeline currentStatus={order.status} />
+          <StatusTimeline currentStatus={order.status} country={order.country} />
         </div>
       </div>
 

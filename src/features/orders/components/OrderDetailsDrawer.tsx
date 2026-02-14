@@ -26,7 +26,9 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Copy, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink, Printer } from "lucide-react";
+import { getStatusLabel, getCountryName } from "@/lib/orderStatus";
+import { generateStickerLabel } from "@/lib/generateStickerLabel";
 
 interface OrderDetailsDrawerProps {
   order: Order | null;
@@ -34,15 +36,6 @@ interface OrderDetailsDrawerProps {
   onOpenChange: (open: boolean) => void;
   onUpdate?: () => void;
 }
-
-const statusMap: Record<string, string> = {
-  purchased: "تم الشراء",
-  arrived_to_china: "وصل إلى الصين",
-  shipping_to_libya: "جاري الشحن إلى ليبيا",
-  arrived_libya: "وصل إلى ليبيا",
-  ready_for_pickup: "جاهز للاستلام",
-  delivered: "تم التسليم",
-};
 
 const STATUS_ORDER = [
   "purchased",
@@ -70,13 +63,10 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
       // Pre-fill shipping info if available
       if (order.shippingRateId) {
         setShippingRateId(order.shippingRateId.toString());
-        // We need to find the rate to know the type
-        // But rates might not be loaded yet. 
-        // We'll handle this in another effect or when rates load.
       } else {
         setShippingRateId("");
       }
-      setShippingType(""); // Will be set when rates load if shippingRateId exists
+      setShippingType(""); 
     }
   }, [order]);
 
@@ -116,10 +106,13 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
     }
 
     // Validate status progression - prevent skipping statuses
-    const newStatusIndex = STATUS_ORDER.indexOf(status);
-    if (newStatusIndex > currentStatusIndex + 1) {
-      toast.error(`لا يمكن تجاوز الحالات. يجب إكمال الحالة الحالية "${statusMap[order.status]}" أولاً`);
-      return;
+    // Allow canceling from any status
+    if (status !== "canceled") {
+      const newStatusIndex = STATUS_ORDER.indexOf(status);
+      if (newStatusIndex > currentStatusIndex + 1) {
+        toast.error(`لا يمكن تجاوز الحالات. يجب إكمال الحالة الحالية "${getStatusLabel(order.status, order.country)}" أولاً`);
+        return;
+      }
     }
 
     if (status === "shipping_to_libya" && (!weight || !shippingRateId) && status !== order.status) {
@@ -206,24 +199,36 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
             {/* Status Change Section */}
             <div className="space-y-3">
               <Label>تحديث الحالة</Label>
-              <Select value={status} onValueChange={setStatus} dir="rtl">
+              <Select 
+                value={status} 
+                onValueChange={setStatus} 
+                dir="rtl"
+                disabled={order.status === "canceled"} // Disable if already canceled
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(statusMap).map(([key, label]) => {
+                  {STATUS_ORDER.map((key) => {
                     const optionIndex = STATUS_ORDER.indexOf(key);
                     // Only show current status and next valid status
                     if (optionIndex < currentStatusIndex || optionIndex > currentStatusIndex + 1) return null;
                     
                     return (
                       <SelectItem key={key} value={key}>
-                        {label}
+                        {getStatusLabel(key, order.country)}
                       </SelectItem>
                     );
                   })}
+                  {/* Always show canceled option */}
+                  <SelectItem value="canceled" className="text-destructive">
+                    {getStatusLabel("canceled", order.country)}
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {order.status === "canceled" && (
+                <p className="text-sm text-destructive">هذا الطلب ملغي ولا يمكن تعديله</p>
+              )}
             </div>
 
             {/* Shipping Fields */}
@@ -306,6 +311,16 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                 )}
               </div>
             )}
+
+            {/* Print Sticker Button */}
+            <Button 
+              variant="secondary" 
+              className="w-full gap-2 text-sm md:text-base" 
+              onClick={() => generateStickerLabel(order)}
+            >
+              <Printer className="h-4 w-4" />
+              طباعة ملصق
+            </Button>
 
             {/* Product Link */}
             {order.productUrl && (

@@ -41,6 +41,7 @@ export async function POST(request: Request) {
                     passwordHash: pendingUser.passwordHash,
                     mobile: pendingUser.mobile,
                     role: "CUSTOMER",
+                    approved: false, // Requires admin approval
                 },
             });
 

@@ -62,6 +62,25 @@ export async function GET(request: NextRequest) {
             where,
         });
 
+        // Helper maps for labels
+        const statusLabels: Record<string, string> = {
+            purchased: "تم الشراء",
+            arrived_to_china: "وصل إلى المخزن",
+            shipping_to_libya: "قيد الشحن لليبيا",
+            arrived_libya: "وصل إلى ليبيا",
+            ready_for_pickup: "جاهز للاستلام",
+            delivered: "تم التسليم",
+            canceled: "ملغي",
+        };
+
+        const countryLabels: Record<string, string> = {
+            CHINA: "الصين",
+            USA: "أمريكا",
+            TURKEY: "تركيا",
+            DUBAI: "دبي",
+            UNKNOWN: "غير محدد",
+        };
+
         // Format the response
         const byStatus = statusStats.reduce((acc, curr) => {
             acc[curr.status] = curr._count.id;
@@ -74,11 +93,26 @@ export async function GET(request: NextRequest) {
             return acc;
         }, {} as Record<string, number>);
 
+        // Create structured lists for Flutter
+        const statusList = Object.entries(byStatus).map(([id, count]) => ({
+            id,
+            label: statusLabels[id] || id,
+            count
+        }));
+
+        const countryList = Object.entries(byCountry).map(([id, count]) => ({
+            id,
+            label: countryLabels[id] || id,
+            count
+        }));
+
         const response = {
             data: {
                 total: totalCount,
                 byStatus,
                 byCountry,
+                statusList,
+                countryList,
             },
         };
 
@@ -90,13 +124,7 @@ export async function GET(request: NextRequest) {
         console.log('Response:', JSON.stringify(response, null, 2));
         console.log('='.repeat(50));
 
-        return NextResponse.json({
-            data: {
-                total: totalCount,
-                byStatus,
-                byCountry,
-            },
-        });
+        return NextResponse.json(response);
     } catch (error) {
         return NextResponse.json(
             { error: error instanceof Error ? error.message : "Unknown error" },

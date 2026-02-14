@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/refresh"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/auth/login",
+  "/api/auth/refresh",
+  "/api/auth/register",
+  "/api/auth/verify-otp"
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -10,7 +16,8 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/static") ||
-    pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js)$/)
+    pathname.startsWith("/uploads") ||
+    pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|webp)$/)
   ) {
     return NextResponse.next();
   }
@@ -22,11 +29,16 @@ export async function middleware(request: NextRequest) {
 
   let token = request.cookies.get("access_token")?.value;
   const authHeader = request.headers.get("authorization");
-  
+
   if (!token && authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.split(" ")[1];
   }
-  
+
+  // Check query param for token (needed for SSE/EventSource)
+  if (!token && request.nextUrl.searchParams.has("token")) {
+    token = request.nextUrl.searchParams.get("token") || undefined;
+  }
+
   // Handle "Bearer null" or "Bearer undefined" cases
   if (token === "null" || token === "undefined") {
     token = undefined;

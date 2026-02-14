@@ -33,6 +33,7 @@ const statusMap: Record<string, string> = {
   arrived_libya: "وصل إلى ليبيا",
   ready_for_pickup: "جاهز للاستلام",
   delivered: "تم التسليم",
+  canceled: "ملغي",
 };
 
 const countryMap: Record<string, string> = {
@@ -151,10 +152,14 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
                 <TableCell>{order.customer?.user?.name || "-"}</TableCell>
                 <TableCell>${order.usdPrice}</TableCell>
                 <TableCell>{order.shippingRate?.name || "-"}</TableCell>
-                <TableCell>{order.shippingRate?.country ? countryMap[order.shippingRate.country] || order.shippingRate.country : "-"}</TableCell>
-                <TableCell>{order.shippingCost ? `$${order.shippingCost}` : "-"}</TableCell>
                 <TableCell>
                   <Badge variant="outline">
+                    {order.country ? (countryMap[order.country] || order.country) : "الصين"}
+                  </Badge>
+                </TableCell>
+                <TableCell>{order.shippingCost ? `$${order.shippingCost}` : "-"}</TableCell>
+                <TableCell>
+                  <Badge variant={order.status === "canceled" ? "destructive" : "outline"}>
                     {statusMap[order.status] || order.status}
                   </Badge>
                 </TableCell>

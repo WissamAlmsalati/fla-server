@@ -12,8 +12,30 @@ export async function GET(request: NextRequest) {
     const query = orderFiltersSchema.parse(Object.fromEntries(request.nextUrl.searchParams));
 
     const where: any = {};
-    if (user.role === "CUSTOMER" && user.customerId) {
-      where.customerId = user.customerId;
+
+    // For CUSTOMER users, ALWAYS filter by their customerId
+    if (user.role === "CUSTOMER") {
+      let customerIdToUse: number | null = user.customerId || null;
+
+      // If customerId not in token, fetch it from database
+      if (!customerIdToUse) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.sub },
+          include: { customer: true }
+        });
+        customerIdToUse = dbUser?.customer?.id || null;
+      }
+
+      if (!customerIdToUse) {
+        // Customer has no associated customer record - return empty
+        return NextResponse.json({
+          data: [],
+          meta: { nextCursor: null, hasMore: false },
+        });
+      }
+
+      // FORCE customerId filter for customers - they can ONLY see their own orders
+      where.customerId = customerIdToUse;
     }
 
     if (query.search) {
@@ -71,7 +93,8 @@ export async function GET(request: NextRequest) {
       where: {
         ...where,
         ...(query.status && { status: query.status as OrderStatus }),
-        ...(query.customerId && { customerId: query.customerId }),
+        // Only allow admins/staff to filter by customerId - customers already have it forced
+        ...(query.customerId && user.role !== "CUSTOMER" && { customerId: query.customerId }),
         ...(query.country && { country: query.country }),
       },
       take: query.limit,

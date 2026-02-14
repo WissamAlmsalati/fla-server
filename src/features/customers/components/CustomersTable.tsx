@@ -40,7 +40,7 @@ const handleDeleteCustomer = async (customerId: number, dispatch: any) => {
       await dispatch(deleteCustomer(customerId)).unwrap();
       toast.success("تم حذف العميل بنجاح");
     } catch (error: any) {
-      toast.error(error || "فشل في حذف العميل");
+      toast.error(error.message || "فشل في حذف العميل");
     }
   }
 };
@@ -56,10 +56,8 @@ export function CustomersTable({ filters }: CustomersTableProps) {
   const { list: customers, status, error } = useReduxSelector((state) => state.customers);
 
   useEffect(() => {
-    if (status === "idle") {
-      dispatch(fetchCustomers(filters));
-    }
-  }, [dispatch, status, JSON.stringify(filters)]);
+    dispatch(fetchCustomers(filters));
+  }, [dispatch, JSON.stringify(filters)]);
 
   if (status === "loading") {
     return <div className="text-center p-4">جاري التحميل...</div>;

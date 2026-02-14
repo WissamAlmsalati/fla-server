@@ -8,8 +8,23 @@ export type JWTPayload = {
 };
 
 export async function requireAuth(request: Request) {
+  // Check Authorization header first (for mobile app)
   const authHeader = request.headers.get("authorization");
-  const token = authHeader?.split(" ")[1];
+  let token = authHeader?.split(" ")[1];
+
+  // If no Authorization header, check cookies (for web dashboard)
+  if (!token) {
+    const cookieHeader = request.headers.get("cookie");
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(";").reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split("=");
+        acc[key] = value;
+        return acc;
+      }, {} as Record<string, string>);
+      token = cookies.access_token;
+    }
+  }
+
   if (!token) throw new Error("Missing authorization token");
 
   const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as unknown as JWTPayload;

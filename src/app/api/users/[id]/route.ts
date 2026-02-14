@@ -50,6 +50,7 @@ export async function GET(
         mobile: true,
         photoUrl: true,
         passportUrl: true,
+        suspended: true,
         createdAt: true,
         customer: {
           select: {
@@ -118,18 +119,24 @@ export async function PUT(
     }
 
     const updatedUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const updateData: any = {
+        name: payload.name,
+        email: payload.email,
+        role: payload.role,
+        mobile: payload.mobile,
+        photoUrl: payload.photoUrl,
+        passportUrl: payload.passportUrl,
+        suspended: payload.suspended,
+      };
+
+      // Only update password if provided
+      if (payload.password) {
+        updateData.passwordHash = payload.password; // In real app, hash this
+      }
+
       const user = await tx.user.update({
         where: { id: userId },
-        data: {
-          name: payload.name,
-          email: payload.email,
-          passwordHash: payload.password, // In real app, hash this if provided
-          role: payload.role,
-          mobile: payload.mobile,
-          photoUrl: payload.photoUrl,
-          passportUrl: payload.passportUrl,
-          suspended: payload.suspended,
-        },
+        data: updateData,
       });
 
       // If role is CUSTOMER, ensure customer record exists

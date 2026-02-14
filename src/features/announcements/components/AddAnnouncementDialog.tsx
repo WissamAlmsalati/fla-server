@@ -89,7 +89,7 @@ export function AddAnnouncementDialog() {
                 required
               />
               {image && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground truncate max-w-[400px]">
                   تم اختيار: {image.name}
                 </p>
               )}

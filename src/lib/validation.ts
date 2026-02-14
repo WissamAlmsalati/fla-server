@@ -22,7 +22,7 @@ export const createOrderSchema = z.object({
 });
 
 export const updateOrderSchema = z.object({
-  status: z.enum(["purchased", "arrived_to_china", "shipping_to_libya", "arrived_libya", "ready_for_pickup", "delivered"]).optional(),
+  status: z.enum(["purchased", "arrived_to_china", "shipping_to_libya", "arrived_libya", "ready_for_pickup", "delivered", "canceled"]).optional(),
   weight: z.number().optional(),
   tracking_number: z.string().optional(),
   name: z.string().optional(),

@@ -22,6 +22,7 @@ enum OrderStatus {
   arrived_libya
   ready_for_pickup
   delivered
+  canceled
 }
 
 enum ShipmentStatus {
@@ -60,6 +61,7 @@ model User {
   photoUrl      String?
   passportUrl   String?
   suspended     Boolean         @default(false)
+  approved      Boolean         @default(true)
   messages      OrderMessage[]
   createdAt     DateTime        @default(now())
   customer      Customer?
@@ -91,16 +93,18 @@ model Order {
   notes          String?
   status         OrderStatus    @default(purchased)
   weight         Float?
-  customerId     Int
-  customer       Customer       @relation(fields: [customerId], references: [id])
+  customerId     Int?
+  customer       Customer?      @relation(fields: [customerId], references: [id])
   shipmentItems  ShipmentItem[]
   logs           OrderLog[]
   messages       OrderMessage[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   shippingRateId Int?
-  shippingRate   ShippingRate? @relation(fields: [shippingRateId], references: [id])
+  shippingRate   ShippingRate? @relation(fields: [shippingRateId], references: [id], onDelete: SetNull)
   shippingCost   Float?
+  shippingRateName  String?
+  shippingRatePrice Float?
   country        String?        @default("CHINA")
 }
 
@@ -184,8 +188,11 @@ model Transaction {
 model Announcement {
   id        Int      @id @default(autoincrement())
   title     String
+  body      String?
   imageUrl  String
+  actionUrl String?
   isActive  Boolean  @default(true)
+  expiresAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

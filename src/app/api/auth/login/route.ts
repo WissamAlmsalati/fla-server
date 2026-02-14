@@ -14,12 +14,17 @@ export async function POST(request: Request) {
     const payload = loginSchema.parse(body);
     const user = await prisma.user.findUnique({ where: { email: payload.email } });
     if (!user || payload.password !== user.passwordHash) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" }, { status: 401 });
     }
 
     // Check if user account is suspended
     if (user.suspended) {
       return NextResponse.json({ error: "الحساب معلق، يرجى التواصل مع الإدارة" }, { status: 403 });
+    }
+
+    // Check if user account is approved (for mobile registrations)
+    if (!user.approved) {
+      return NextResponse.json({ error: "الحساب قيد المراجعة، يرجى الانتظار حتى يتم قبول طلبك" }, { status: 403 });
     }
     const accessToken = signAccessToken({
       sub: user.id,
@@ -33,7 +38,7 @@ export async function POST(request: Request) {
     });
 
     const response = NextResponse.json({
-      message: "Authenticated",
+      message: "تم تسجيل الدخول بنجاح",
       accessToken, // Return the token to the client
       user: {
         id: user.id,
@@ -57,6 +62,6 @@ export async function POST(request: Request) {
     });
     return response;
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid request" }, { status: 400 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "طلب غير صالح" }, { status: 400 });
   }
 }

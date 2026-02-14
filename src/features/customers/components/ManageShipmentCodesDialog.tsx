@@ -53,7 +53,7 @@ export function ManageShipmentCodesDialog({ customer, onSuccess }: ManageShipmen
       setOpen(false);
       if (onSuccess) onSuccess();
     } catch (error: any) {
-      toast.error(error || "فشل تحديث أكواد الشحن");
+      toast.error(error.message || "فشل تحديث أكواد الشحن");
     } finally {
       setLoading(false);
     }

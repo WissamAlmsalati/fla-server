@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AppSidebar } from "@/components/app-sidebar"
 import { OrdersDataTable } from "@/features/orders/components/OrdersDataTable"
 import { SiteHeader } from "@/components/site-header"
@@ -14,6 +14,20 @@ import { Button } from "@/components/ui/button";
 import { Scan, Search } from "lucide-react";
 import { ScannerDialog } from "@/components/scanner-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { OrderDetailsDrawer } from "@/features/orders/components/OrderDetailsDrawer";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
+import type { Order } from "@/features/orders/slices/orderSlice";
+import { toast } from "sonner";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { AlertCircle } from "lucide-react";
 
 export default function Page() {
   const [search, setSearch] = useState("");
@@ -23,6 +37,52 @@ export default function Page() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [lastScanTime, setLastScanTime] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
+  
+  // State for barcode scanner bottom sheet
+  const [scannedOrder, setScannedOrder] = useState<Order | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  
+  // State for not found dialog
+  const [notFoundOpen, setNotFoundOpen] = useState(false);
+  const [notFoundBarcode, setNotFoundBarcode] = useState("");
+
+  const fetchOrderByTracking = useCallback(async (trackingNumber: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/orders?search=${trackingNumber}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.data && data.data.length > 0) {
+        setScannedOrder(data.data[0]);
+        setIsDrawerOpen(true);
+      } else {
+        // Show not found dialog
+        setNotFoundBarcode(trackingNumber);
+        setNotFoundOpen(true);
+      }
+    } catch (err) {
+      console.error("Error fetching order:", err);
+      toast.error("فشل في تحميل بيانات الطلب");
+    }
+  }, []);
+
+  // Hardware barcode scanner listener
+  useBarcodeScanner({
+    onScan: (barcode) => {
+      // Close any open dialogs first
+      setIsDrawerOpen(false);
+      setScannedOrder(null);
+      setNotFoundOpen(false);
+      
+      // Show toast that we detected a scan
+      toast.info(`جاري البحث عن: ${barcode}`);
+      fetchOrderByTracking(barcode);
+    },
+    enabled: !scannerOpen, // Only disable when camera scanner is open
+  });
 
   useEffect(() => {
     if (search !== debouncedSearch) {
@@ -39,6 +99,12 @@ export default function Page() {
   if (debouncedSearch) filters.search = debouncedSearch;
   if (statusFilter && statusFilter !== "all") filters.status = statusFilter;
   if (countryFilter && countryFilter !== "all") filters.country = countryFilter;
+
+  const handleOrderUpdate = () => {
+    setScannedOrder(null);
+    setIsDrawerOpen(false);
+    setLastScanTime(Date.now()); // Refresh the table
+  };
 
   return (
     <SidebarProvider
@@ -82,6 +148,7 @@ export default function Page() {
                     <SelectItem value="arrived_libya">وصل إلى ليبيا</SelectItem>
                     <SelectItem value="ready_for_pickup">جاهز للاستلام</SelectItem>
                     <SelectItem value="delivered">تم التسليم</SelectItem>
+                    <SelectItem value="canceled">ملغي</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={countryFilter} onValueChange={setCountryFilter}>
@@ -122,7 +189,39 @@ export default function Page() {
           setScannerOpen(false);
         }}
       />
+
+      {/* Bottom sheet for barcode scanner */}
+      <OrderDetailsDrawer
+        order={scannedOrder}
+        open={isDrawerOpen}
+        onOpenChange={(open) => {
+          setIsDrawerOpen(open);
+          if (!open) setScannedOrder(null);
+        }}
+        onUpdate={handleOrderUpdate}
+      />
+
+      {/* Product not found dialog */}
+      <Dialog open={notFoundOpen} onOpenChange={setNotFoundOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 mb-4">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <DialogTitle className="text-center text-xl">المنتج غير موجود</DialogTitle>
+            <DialogDescription className="text-center">
+              لم يتم العثور على طلب برقم التتبع:
+              <br />
+              <span className="font-mono font-bold text-foreground">{notFoundBarcode}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button onClick={() => setNotFoundOpen(false)}>
+              إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   )
 }
-
