@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
 
 // POST /api/transactions - Create a new transaction
 export async function POST(request: NextRequest) {
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Create transaction and update balance in a transaction
-        const transactionResult = await prisma.$transaction(async (tx) => {
+        const transactionResult = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // Create transaction record
             const newTransaction = await tx.transaction.create({
                 data: {

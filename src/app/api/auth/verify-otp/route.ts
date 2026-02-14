@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 const verifySchema = z.object({
     email: z.string().email(),
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
         }
 
         // Create User and Customer
-        const user = await prisma.$transaction(async (tx) => {
+        const user = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // Create User
             const newUser = await tx.user.create({
                 data: {

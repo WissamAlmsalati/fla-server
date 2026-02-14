@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
 
 enum Role {
   ADMIN = "ADMIN",
@@ -86,7 +87,7 @@ export async function DELETE(
     }
 
     // Use a transaction to update orders and delete customer
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Set customerId to null for all orders (using raw SQL since Prisma client may not be updated)
       await tx.$executeRaw`UPDATE "Order" SET "customerId" = NULL WHERE "customerId" = ${customerId}`;
 

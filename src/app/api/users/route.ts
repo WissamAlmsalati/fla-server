@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
 
 enum Role {
   ADMIN = "ADMIN",
@@ -134,7 +135,7 @@ export async function POST(request: Request) {
       turkeyCode = `ABUHAJ FLL${nextNumber}`;
     }
 
-    const user = await prisma.$transaction(async (tx) => {
+    const user = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const newUser = await tx.user.create({
         data: {
           name: payload.name,

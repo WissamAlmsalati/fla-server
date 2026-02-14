@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
 
 // PATCH - Approve an account request
 export async function PATCH(
@@ -98,7 +99,7 @@ export async function DELETE(
         }
 
         // Delete the user and associated customer in a transaction
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // Delete customer if exists
             if (user.customerId) {
                 await tx.customer.delete({

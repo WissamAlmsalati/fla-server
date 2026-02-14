@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { updateOrderSchema } from "@/lib/validation";
 import { requireAuth } from "@/lib/auth";
 import { requireRole } from "@/lib/rbac";
+import { Prisma } from "@prisma/client";
 
 export async function GET(
   request: Request,
@@ -71,7 +72,7 @@ export async function PATCH(
       requireRole(user.role, ["ADMIN", "PURCHASE_OFFICER"]);
     }
 
-    const updatedOrder = await prisma.$transaction(async (tx) => {
+    const updatedOrder = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. If order is already canceled, it cannot be changed
       if (order.status === "canceled") {
         throw new Error("لا يمكن تعديل طلب ملغي");
