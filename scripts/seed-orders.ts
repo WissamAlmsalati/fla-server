@@ -121,7 +121,7 @@ async function seedOrders() {
             },
         });
 
-        const orderLogs = createdOrders.map(order => ({
+        const orderLogs = createdOrders.map((order: typeof createdOrders[number]) => ({
             orderId: order.id,
             status: order.status,
             note: `الطلب في حالة ${order.status}`,
