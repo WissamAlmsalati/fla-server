@@ -116,7 +116,7 @@ async function seedOrders() {
         const createdOrders = await prisma.order.findMany({
             where: {
                 trackingNumber: {
-                    in: orders.map(o => o.trackingNumber),
+                    in: orders.map((o: any) => o.trackingNumber),
                 },
             },
         });

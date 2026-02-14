@@ -28,8 +28,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ orde
 
     // Mark messages as read by current user
     const unreadMessageIds = messages
-      .filter((msg) => !msg.readBy.includes(user.sub) && msg.authorId !== user.sub)
-      .map((msg) => msg.id);
+      .filter((msg: any) => !msg.readBy.includes(user.sub) && msg.authorId !== user.sub)
+      .map((msg: any) => msg.id);
 
     if (unreadMessageIds.length > 0) {
       await prisma.orderMessage.updateMany({

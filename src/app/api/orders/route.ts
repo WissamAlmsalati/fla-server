@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate unread message counts for each order
     const ordersWithUnreadCounts = await Promise.all(
-      orders.map(async (order) => {
+      orders.map(async (order: any) => {
         const unreadCount = await prisma.orderMessage.count({
           where: {
             orderId: order.id,
