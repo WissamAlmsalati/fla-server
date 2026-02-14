@@ -53,12 +53,14 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: 60 * 60 * 24, // 1 day in seconds
       secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
     response.cookies.set("refresh_token", refreshToken, {
       httpOnly: true,
       path: "/api/auth/refresh",
       maxAge: 60 * 60 * 24 * 7,
       secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
     return response;
   } catch (error) {
