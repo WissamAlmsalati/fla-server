@@ -51,13 +51,13 @@ export async function GET(request: NextRequest) {
             : "0";
 
         // Format status stats
-        const byStatus = orderStats.reduce((acc: Record<string, number>, curr) => {
+        const byStatus = orderStats.reduce((acc: Record<string, number>, curr: any) => {
             acc[curr.status] = curr._count.id;
             return acc;
         }, {} as Record<string, number>);
 
         // Format country stats
-        const byCountry = ordersByCountry.reduce((acc: Record<string, number>, curr) => {
+        const byCountry = ordersByCountry.reduce((acc: Record<string, number>, curr: any) => {
             const country = curr.country || "UNKNOWN";
             acc[country] = curr._count.id;
             return acc;
