@@ -6,6 +6,7 @@ import { signAccessToken, signRefreshToken } from "@/lib/auth";
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
+  fcmToken: z.string().optional().describe("Firebase Cloud Messaging token for push notifications"),
 });
 
 export async function POST(request: Request) {
@@ -26,15 +27,33 @@ export async function POST(request: Request) {
     if (!user.approved) {
       return NextResponse.json({ error: "الحساب قيد المراجعة، يرجى الانتظار حتى يتم قبول طلبك" }, { status: 403 });
     }
+
+    // Add FCM token if not exists
+    if (payload.fcmToken && !user.fcmTokens?.includes(payload.fcmToken)) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          fcmTokens: {
+            push: payload.fcmToken
+          }
+        }
+      });
+    }
     const accessToken = signAccessToken({
       sub: user.id,
       role: user.role,
+      name: user.name,
+      email: user.email,
       tokenVersion: user.tokenVersion,
+      customerId: user.customerId,
     });
     const refreshToken = signRefreshToken({
       sub: user.id,
       role: user.role,
+      name: user.name,
+      email: user.email,
       tokenVersion: user.tokenVersion,
+      customerId: user.customerId,
     });
 
     const response = NextResponse.json({

@@ -44,6 +44,9 @@ export function EditUserDialog({ user, onSuccess }: EditUserDialogProps) {
     photoUrl: user.photoUrl || "",
     passportUrl: user.passportUrl || "",
     customerCode: user.customer?.code || "",
+    dubaiCode: user.customer?.dubaiCode || "",
+    usaCode: user.customer?.usaCode || "",
+    turkeyCode: user.customer?.turkeyCode || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -167,15 +170,47 @@ export function EditUserDialog({ user, onSuccess }: EditUserDialogProps) {
             </div>
 
             {formData.role === "CUSTOMER" && (
-              <div className="grid gap-2">
-                <Label htmlFor="customerCode" className="text-right">
-                  كود الشحن
-                </Label>
-                <Input
-                  id="customerCode"
-                  value={formData.customerCode}
-                  onChange={(e) => setFormData({ ...formData, customerCode: e.target.value })}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="customerCode" className="text-right">
+                    كود الصين
+                  </Label>
+                  <Input
+                    id="customerCode"
+                    value={formData.customerCode}
+                    onChange={(e) => setFormData({ ...formData, customerCode: e.target.value })}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="dubaiCode" className="text-right">
+                    كود دبي
+                  </Label>
+                  <Input
+                    id="dubaiCode"
+                    value={formData.dubaiCode}
+                    onChange={(e) => setFormData({ ...formData, dubaiCode: e.target.value })}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="usaCode" className="text-right">
+                    كود أمريكا
+                  </Label>
+                  <Input
+                    id="usaCode"
+                    value={formData.usaCode}
+                    onChange={(e) => setFormData({ ...formData, usaCode: e.target.value })}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="turkeyCode" className="text-right">
+                    كود تركيا
+                  </Label>
+                  <Input
+                    id="turkeyCode"
+                    value={formData.turkeyCode}
+                    onChange={(e) => setFormData({ ...formData, turkeyCode: e.target.value })}
+                  />
+                </div>
               </div>
             )}
           </div>

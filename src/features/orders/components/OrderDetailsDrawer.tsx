@@ -48,11 +48,14 @@ const STATUS_ORDER = [
 
 export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: OrderDetailsDrawerProps) {
   const dispatch = useReduxDispatch();
+  const { user } = useReduxSelector((state) => state.auth);
+  const role = user?.role || "CUSTOMER";
   const { rates, status: ratesStatus } = useReduxSelector((state) => state.shipping);
   const [status, setStatus] = useState(order?.status || "");
   const [weight, setWeight] = useState<string>("");
   const [shippingType, setShippingType] = useState<string>("");
   const [shippingRateId, setShippingRateId] = useState<string>("");
+  const [flightNumber, setFlightNumber] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -67,6 +70,7 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
         setShippingRateId("");
       }
       setShippingType(""); 
+      setFlightNumber(order.flightNumber || "");
     }
   }, [order]);
 
@@ -88,7 +92,7 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
 
   if (!order) return null;
 
-  const showShippingFields = status === "arrived_to_china" || status === "shipping_to_libya";
+  const showShippingFields = status === "shipping_to_libya";
   const filteredRates = rates.filter(r => 
     (!shippingType || r.type === shippingType) && r.country === (order.country || "CHINA")
   );
@@ -101,7 +105,8 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
     // Prevent saving if nothing changed
     if (status === order.status && 
         weight === (order.weight?.toString() || "") && 
-        shippingRateId === (order.shippingRateId?.toString() || "")) {
+        shippingRateId === (order.shippingRateId?.toString() || "") &&
+        flightNumber === (order.flightNumber || "")) {
       return;
     }
 
@@ -115,8 +120,8 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
       }
     }
 
-    if (status === "shipping_to_libya" && (!weight || !shippingRateId) && status !== order.status) {
-      toast.error("يرجى إدخال الوزن واختيار نوع الشحن عند الشحن إلى ليبيا");
+    if (status === "shipping_to_libya" && (!shippingType || !weight || !shippingRateId) && status !== order.status) {
+      toast.error("يرجى اختيار طريقة الشحن ونوع الشحن وإدخال الوزن عند الشحن إلى ليبيا");
       return;
     }
 
@@ -127,7 +132,8 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
         data: { 
           status,
           weight: weight ? parseFloat(weight) : undefined,
-          shippingRateId: shippingRateId ? parseInt(shippingRateId) : undefined
+          shippingRateId: shippingRateId ? parseInt(shippingRateId) : undefined,
+          flightNumber: flightNumber || undefined
         } 
       })).unwrap();
       toast.success("تم تحديث حالة الطلب بنجاح");
@@ -203,7 +209,7 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                 value={status} 
                 onValueChange={setStatus} 
                 dir="rtl"
-                disabled={order.status === "canceled"} // Disable if already canceled
+                disabled={order.status === "canceled" || role === "PURCHASE_OFFICER"} // Disable if canceled or by role
               >
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -211,7 +217,29 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                 <SelectContent>
                   {STATUS_ORDER.map((key) => {
                     const optionIndex = STATUS_ORDER.indexOf(key);
-                    // Only show current status and next valid status
+                    
+                    // ADMIN can change to any status
+                    if (role === "ADMIN") {
+                      return (
+                        <SelectItem key={key} value={key}>
+                          {getStatusLabel(key, order.country)}
+                        </SelectItem>
+                      );
+                    }
+
+                    // Warehouse staff can only see their current status and the next one
+                    // NOTE: This logic assumes they are on their respective page/view
+                    if (role === "CHINA_WAREHOUSE" || role === "LIBYA_WAREHOUSE") {
+                      if (optionIndex < currentStatusIndex || optionIndex > currentStatusIndex + 1) return null;
+                      
+                      // China warehouse can only move to arrived_to_china or shipping_to_libya
+                      if (role === "CHINA_WAREHOUSE" && !["purchased", "arrived_to_china", "shipping_to_libya"].includes(key)) return null;
+                      
+                      // Libya warehouse can only move to arrived_libya or ready_for_pickup
+                      if (role === "LIBYA_WAREHOUSE" && !["shipping_to_libya", "arrived_libya", "ready_for_pickup", "delivered"].includes(key)) return null;
+                    }
+
+                    // Default rule: Only show current status and next valid status
                     if (optionIndex < currentStatusIndex || optionIndex > currentStatusIndex + 1) return null;
                     
                     return (
@@ -220,14 +248,19 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                       </SelectItem>
                     );
                   })}
-                  {/* Always show canceled option */}
-                  <SelectItem value="canceled" className="text-destructive">
-                    {getStatusLabel("canceled", order.country)}
-                  </SelectItem>
+                  {/* Always show canceled option for ADMIN */}
+                  {role === "ADMIN" && (
+                    <SelectItem value="canceled" className="text-destructive">
+                      {getStatusLabel("canceled", order.country)}
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               {order.status === "canceled" && (
                 <p className="text-sm text-destructive">هذا الطلب ملغي ولا يمكن تعديله</p>
+              )}
+              {role === "PURCHASE_OFFICER" && (
+                <p className="text-sm text-muted-foreground">ليس لديك صلاحية لتغيير الحالة</p>
               )}
             </div>
 
@@ -243,7 +276,7 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                       setShippingRateId(""); // Reset rate when type changes
                     }} 
                     dir="rtl"
-                    disabled={!!order.shippingRateId}
+                    disabled={!!order.shippingRateId || role === "PURCHASE_OFFICER"}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="اختر طريقة الشحن" />
@@ -256,12 +289,20 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                   {!!order.shippingRateId && (
                     <p className="text-xs text-muted-foreground">لا يمكن تغيير طريقة الشحن بعد تحديدها</p>
                   )}
+                  {role === "PURCHASE_OFFICER" && (
+                     <p className="text-xs text-muted-foreground">مسؤول المشتريات لا يمكنه تعديل بيانات الشحن</p>
+                  )}
                 </div>
 
                 {shippingType && (
                   <div className="space-y-2">
                     <Label htmlFor="shippingRate">نوع الشحن</Label>
-                    <Select value={shippingRateId} onValueChange={setShippingRateId} dir="rtl">
+                    <Select 
+                      value={shippingRateId} 
+                      onValueChange={setShippingRateId} 
+                      dir="rtl"
+                      disabled={!!order.shippingRateId || role === "PURCHASE_OFFICER"}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder={ratesStatus === 'loading' ? "جاري التحميل..." : "اختر نوع الشحن"} />
                       </SelectTrigger>
@@ -298,9 +339,22 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                       onChange={(e) => setWeight(e.target.value)}
                       placeholder={shippingType === 'AIR' ? 'أدخل الوزن بالكيلوجرام' : 'أدخل الحجم بالمتر المكعب'}
                       className="text-right"
+                      disabled={!!order.weight || role === "PURCHASE_OFFICER"}
                     />
                   </div>
                 )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="flightNumber">رقم الرحلة (اختياري)</Label>
+                  <Input
+                    id="flightNumber"
+                    type="text"
+                    value={flightNumber}
+                    onChange={(e) => setFlightNumber(e.target.value)}
+                    placeholder="أدخل رقم الرحلة..."
+                    className="text-right font-mono"
+                  />
+                </div>
 
                 {calculatedCost > 0 && (
                   <div className="bg-muted p-3 rounded-md text-center">
@@ -341,7 +395,8 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                 loading || 
                 (status === order.status && 
                  weight === (order.weight?.toString() || "") && 
-                 shippingRateId === (order.shippingRateId?.toString() || ""))
+                 shippingRateId === (order.shippingRateId?.toString() || "") &&
+                 flightNumber === (order.flightNumber || ""))
               }
             >
               {loading ? "جاري الحفظ..." : "حفظ التغييرات"}

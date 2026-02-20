@@ -130,7 +130,7 @@ export default function Page() {
                 <div className="relative flex-1">
                   <Search className={`absolute right-2.5 top-2.5 h-4 w-4 ${isSearching ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
                   <Input
-                    placeholder="بحث برقم التتبع، اسم العميل، أو اسم الطلب..."
+                    placeholder="بحث برقم التتبع، اسم العميل، اسم الطلب، أو رقم الرحلة..."
                     className="pr-8"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}

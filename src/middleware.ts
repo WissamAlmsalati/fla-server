@@ -56,7 +56,33 @@ export async function middleware(request: NextRequest) {
 
   try {
     const secret = new TextEncoder().encode(process.env.ACCESS_TOKEN_SECRET);
-    await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, secret);
+    const role = payload.role as string;
+
+    // RBAC: CUSTOMER role should not access dashboard routes
+    const DASHBOARD_ROUTES = [
+      "/dashboard",
+      "/orders",
+      "/customers",
+      "/users",
+      "/shipping",
+      "/account-requests",
+      "/announcements",
+      "/warehouses"
+    ];
+
+    if (role === "CUSTOMER" && DASHBOARD_ROUTES.some(route => pathname.startsWith(route))) {
+      if (isApi) {
+        return NextResponse.json({ error: "Unauthorized role" }, { status: 403 });
+      } else {
+        // Redirect to a safe page or show error. Since they shouldn't be here, redirect to login or a "forbidden" page.
+        // For now, let's redirect to login and clear token to be safe.
+        const response = NextResponse.redirect(new URL("/login?error=unauthorized", request.url));
+        response.cookies.delete("access_token");
+        return response;
+      }
+    }
+
     return NextResponse.next();
   } catch (error) {
     if (isApi) {

@@ -28,7 +28,7 @@ interface OrdersDataTableProps {
 
 const statusMap: Record<string, string> = {
   purchased: "تم الشراء",
-  arrived_to_china: "وصل إلى الصين",
+  arrived_to_china: "وصلت إلى المخزن",
   shipping_to_libya: "جاري الشحن إلى ليبيا",
   arrived_libya: "وصل إلى ليبيا",
   ready_for_pickup: "جاهز للاستلام",
@@ -52,6 +52,7 @@ const exportOrders = (orders: Order[]) => {
     "shippingRate.name": "نوع الشحن",
     "shippingRate.country": "بلد الشحن",
     shippingCost: "تكلفة الشحن",
+    flightNumber: "رقم الرحلة",
     status: "الحالة",
     createdAt: "تاريخ الإنشاء",
     updatedAt: "آخر تحديث",
@@ -130,6 +131,7 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
               <TableHead className="text-right">نوع الشحن</TableHead>
               <TableHead className="text-right">بلد الشحن</TableHead>
               <TableHead className="text-right">تكلفة الشحن</TableHead>
+              <TableHead className="text-right">رقم الرحلة</TableHead>
               <TableHead className="text-right">الحالة</TableHead>
               <TableHead className="text-right">رسائل</TableHead>
               <TableHead className="text-right">إجراءات</TableHead>
@@ -158,6 +160,7 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
                   </Badge>
                 </TableCell>
                 <TableCell>{order.shippingCost ? `$${order.shippingCost}` : "-"}</TableCell>
+                <TableCell className="font-mono">{order.flightNumber || "-"}</TableCell>
                 <TableCell>
                   <Badge variant={order.status === "canceled" ? "destructive" : "outline"}>
                     {statusMap[order.status] || order.status}
@@ -188,7 +191,7 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
             ))}
             {paginatedOrders.length === 0 && (
               <TableRow>
-                <TableCell colSpan={11} className="text-center h-24">
+                <TableCell colSpan={12} className="text-center h-24">
                   لا يوجد طلبات
                 </TableCell>
               </TableRow>

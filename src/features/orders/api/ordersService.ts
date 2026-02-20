@@ -59,6 +59,7 @@ export async function updateOrder(id: number, payload: {
   product_url?: string;
   notes?: string;
   shippingRateId?: number;
+  flightNumber?: string;
 }) {
   const token = localStorage.getItem("token");
   const response = await fetch(`/api/orders/${id}`, {

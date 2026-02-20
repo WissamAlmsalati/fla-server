@@ -17,7 +17,10 @@ export async function POST(request: NextRequest) {
     const nextPayload: JWTPayload = {
       sub: user.id,
       role: user.role,
+      name: user.name,
+      email: user.email,
       tokenVersion: user.tokenVersion,
+      customerId: user.customerId,
     };
     const accessToken = signAccessToken(nextPayload);
     const refreshToken = signRefreshToken(nextPayload);

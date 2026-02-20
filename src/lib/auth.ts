@@ -4,7 +4,10 @@ import { prisma } from "@/lib/prisma";
 export type JWTPayload = {
   sub: number;
   role: string;
+  name: string;
+  email: string;
   tokenVersion: number;
+  customerId?: number | null;
 };
 
 export async function requireAuth(request: Request) {
@@ -32,7 +35,14 @@ export async function requireAuth(request: Request) {
   if (!user || user.tokenVersion !== payload.tokenVersion) {
     throw new Error("Invalid token");
   }
-  return { ...payload, customerId: user.customerId };
+  return {
+    ...payload,
+    sub: user.id,
+    role: user.role,
+    name: user.name,
+    email: user.email,
+    customerId: user.customerId
+  };
 }
 
 export function signAccessToken(payload: JWTPayload) {

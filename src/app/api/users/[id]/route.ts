@@ -21,6 +21,9 @@ const updateUserSchema = z.object({
   photoUrl: z.string().optional(),
   passportUrl: z.string().optional(),
   customerCode: z.string().optional(),
+  dubaiCode: z.string().optional(),
+  usaCode: z.string().optional(),
+  turkeyCode: z.string().optional(),
   suspended: z.boolean().optional(),
 });
 
@@ -119,15 +122,14 @@ export async function PUT(
     }
 
     const updatedUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const updateData: any = {
-        name: payload.name,
-        email: payload.email,
-        role: payload.role,
-        mobile: payload.mobile,
-        photoUrl: payload.photoUrl,
-        passportUrl: payload.passportUrl,
-        suspended: payload.suspended,
-      };
+      const updateData: any = {};
+      if (payload.name !== undefined) updateData.name = payload.name;
+      if (payload.email !== undefined) updateData.email = payload.email;
+      if (payload.role !== undefined) updateData.role = payload.role;
+      if (payload.mobile !== undefined) updateData.mobile = payload.mobile;
+      if (payload.photoUrl !== undefined) updateData.photoUrl = payload.photoUrl;
+      if (payload.passportUrl !== undefined) updateData.passportUrl = payload.passportUrl;
+      if (payload.suspended !== undefined) updateData.suspended = payload.suspended;
 
       // Only update password if provided
       if (payload.password) {
@@ -159,12 +161,19 @@ export async function PUT(
         }
       }
 
-      if (payload.customerCode) {
+      // Update customer codes if provided
+      const codesToUpdate: any = {};
+      if (payload.customerCode !== undefined) codesToUpdate.code = payload.customerCode;
+      if (payload.dubaiCode !== undefined) codesToUpdate.dubaiCode = payload.dubaiCode;
+      if (payload.usaCode !== undefined) codesToUpdate.usaCode = payload.usaCode;
+      if (payload.turkeyCode !== undefined) codesToUpdate.turkeyCode = payload.turkeyCode;
+
+      if (Object.keys(codesToUpdate).length > 0) {
         const customer = await tx.customer.findUnique({ where: { userId: userId } });
         if (customer) {
           await tx.customer.update({
             where: { id: customer.id },
-            data: { code: payload.customerCode }
+            data: codesToUpdate
           });
         }
       }

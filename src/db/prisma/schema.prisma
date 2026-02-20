@@ -7,6 +7,167 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           Int            @id @default(autoincrement())
+  name         String
+  email        String         @unique
+  passwordHash String
+  role         Role
+  customerId   Int?
+  tokenVersion Int            @default(0)
+  mobile       String?        @unique
+  photoUrl     String?
+  passportUrl  String?
+  suspended    Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  approved     Boolean        @default(true)
+  fcmTokens    String[]       @default([])
+  customer     Customer?
+  messages     OrderMessage[]
+}
+
+model Customer {
+  id           Int           @id @default(autoincrement())
+  name         String
+  code         String        @unique
+  balanceUSD   Float         @default(0)
+  balanceLYD   Float         @default(0)
+  balanceCNY   Float         @default(0)
+  userId       Int?          @unique
+  dubaiCode    String?       @unique
+  usaCode      String?       @unique
+  turkeyCode   String?       @unique
+  user         User?         @relation(fields: [userId], references: [id])
+  orders       Order[]
+  transactions Transaction[]
+}
+
+model Order {
+  id                Int            @id @default(autoincrement())
+  trackingNumber    String         @unique
+  name              String
+  usdPrice          Float
+  cnyPrice          Float?
+  productUrl        String?
+  notes             String?
+  status            OrderStatus    @default(purchased)
+  weight            Float?
+  customerId        Int?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  shippingRateId    Int?
+  shippingCost      Float?
+  country           String?        @default("CHINA")
+  shippingRateName  String?
+  shippingRatePrice Float?
+  flightNumber      String?
+  customer          Customer?      @relation(fields: [customerId], references: [id])
+  shippingRate      ShippingRate?  @relation(fields: [shippingRateId], references: [id])
+  logs              OrderLog[]
+  messages          OrderMessage[]
+  shipmentItems     ShipmentItem[]
+}
+
+model OrderLog {
+  id        Int         @id @default(autoincrement())
+  orderId   Int
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id])
+}
+
+model Warehouse {
+  id            Int        @id @default(autoincrement())
+  name          String
+  country       String
+  fromShipments Shipment[] @relation("FromWarehouse")
+  toShipments   Shipment[] @relation("ToWarehouse")
+}
+
+model Shipment {
+  id              Int            @id @default(autoincrement())
+  shipmentId      String         @unique
+  weight          Float
+  fromWarehouseId Int
+  toWarehouseId   Int
+  status          ShipmentStatus @default(pending_inbound)
+  fromWarehouse   Warehouse      @relation("FromWarehouse", fields: [fromWarehouseId], references: [id])
+  toWarehouse     Warehouse      @relation("ToWarehouse", fields: [toWarehouseId], references: [id])
+  items           ShipmentItem[]
+}
+
+model ShipmentItem {
+  id         Int      @id @default(autoincrement())
+  shipmentId Int
+  orderId    Int
+  order      Order    @relation(fields: [orderId], references: [id])
+  shipment   Shipment @relation(fields: [shipmentId], references: [id])
+}
+
+model OrderMessage {
+  id        Int            @id @default(autoincrement())
+  orderId   Int
+  authorId  Int
+  content   String
+  createdAt DateTime       @default(now())
+  imageUrl  String?
+  readBy    Int[]          @default([])
+  replyToId Int?
+  author    User           @relation(fields: [authorId], references: [id])
+  order     Order          @relation(fields: [orderId], references: [id])
+  replyTo   OrderMessage?  @relation("ReplyTo", fields: [replyToId], references: [id])
+  replies   OrderMessage[] @relation("ReplyTo")
+}
+
+model ShippingRate {
+  id        Int          @id @default(autoincrement())
+  type      ShippingType
+  name      String
+  price     Float
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  country   String?      @default("CHINA")
+  orders    Order[]
+}
+
+model Transaction {
+  id            Int             @id @default(autoincrement())
+  customerId    Int
+  type          TransactionType
+  amount        Float
+  currency      Currency
+  balanceBefore Float
+  balanceAfter  Float
+  notes         String?
+  createdBy     Int?
+  createdAt     DateTime        @default(now())
+  customer      Customer        @relation(fields: [customerId], references: [id])
+}
+
+model Announcement {
+  id        Int       @id @default(autoincrement())
+  title     String
+  imageUrl  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  isActive  Boolean   @default(true)
+  actionUrl String?
+  body      String?
+  expiresAt DateTime?
+}
+
+model PendingRegistration {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  mobile       String   @unique
+  otp          String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+}
+
 enum Role {
   ADMIN
   PURCHASE_OFFICER
@@ -47,163 +208,4 @@ enum Currency {
   USD
   LYD
   CNY
-}
-
-model User {
-  id            Int             @id @default(autoincrement())
-  name          String
-  email         String          @unique
-  passwordHash  String
-  role          Role
-  customerId    Int?
-  tokenVersion  Int             @default(0)
-  mobile        String?         @unique
-  photoUrl      String?
-  passportUrl   String?
-  suspended     Boolean         @default(false)
-  approved      Boolean         @default(true)
-  messages      OrderMessage[]
-  createdAt     DateTime        @default(now())
-  customer      Customer?
-}
-
-model Customer {
-  id           Int           @id @default(autoincrement())
-  name         String
-  code         String        @unique
-  dubaiCode    String?       @unique
-  usaCode      String?       @unique
-  turkeyCode   String?       @unique
-  balanceUSD   Float         @default(0)
-  balanceLYD   Float         @default(0)
-  balanceCNY   Float         @default(0)
-  orders       Order[]
-  transactions Transaction[]
-  user         User?         @relation(fields: [userId], references: [id])
-  userId       Int?          @unique
-}
-
-model Order {
-  id             Int            @id @default(autoincrement())
-  trackingNumber String         @unique
-  name           String
-  usdPrice       Float
-  cnyPrice       Float?
-  productUrl     String?
-  notes          String?
-  status         OrderStatus    @default(purchased)
-  weight         Float?
-  customerId     Int?
-  customer       Customer?      @relation(fields: [customerId], references: [id])
-  shipmentItems  ShipmentItem[]
-  logs           OrderLog[]
-  messages       OrderMessage[]
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  shippingRateId Int?
-  shippingRate   ShippingRate? @relation(fields: [shippingRateId], references: [id], onDelete: SetNull)
-  shippingCost   Float?
-  shippingRateName  String?
-  shippingRatePrice Float?
-  country        String?        @default("CHINA")
-}
-
-model OrderLog {
-  id        Int         @id @default(autoincrement())
-  orderId   Int
-  status    OrderStatus
-  note      String?
-  createdAt DateTime    @default(now())
-  order     Order       @relation(fields: [orderId], references: [id])
-}
-
-model Warehouse {
-  id      Int        @id @default(autoincrement())
-  name    String
-  country String
-  fromShipments Shipment[] @relation("FromWarehouse")
-  toShipments   Shipment[] @relation("ToWarehouse")
-}
-
-model Shipment {
-  id              Int            @id @default(autoincrement())
-  shipmentId      String         @unique
-  weight          Float
-  fromWarehouseId Int
-  toWarehouseId   Int
-  status          ShipmentStatus @default(pending_inbound)
-  items           ShipmentItem[]
-  fromWarehouse   Warehouse      @relation("FromWarehouse", fields: [fromWarehouseId], references: [id])
-  toWarehouse     Warehouse      @relation("ToWarehouse", fields: [toWarehouseId], references: [id])
-}
-
-model ShipmentItem {
-  id         Int      @id @default(autoincrement())
-  shipmentId Int
-  orderId    Int
-  shipment   Shipment @relation(fields: [shipmentId], references: [id])
-  order      Order    @relation(fields: [orderId], references: [id])
-}
-
-model OrderMessage {
-  id        Int      @id @default(autoincrement())
-  orderId   Int
-  authorId  Int
-  content   String
-  imageUrl  String?
-  readBy    Int[]    @default([])
-  createdAt DateTime @default(now())
-  order     Order    @relation(fields: [orderId], references: [id])
-  author    User     @relation(fields: [authorId], references: [id])
-  replyToId Int?
-  replyTo   OrderMessage? @relation("ReplyTo", fields: [replyToId], references: [id])
-  replies   OrderMessage[] @relation("ReplyTo")
-}
-
-model ShippingRate {
-  id        Int          @id @default(autoincrement())
-  type      ShippingType
-  name      String
-  price     Float
-  orders    Order[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  country   String?      @default("CHINA")
-}
-
-model Transaction {
-  id            Int             @id @default(autoincrement())
-  customerId    Int
-  customer      Customer        @relation(fields: [customerId], references: [id])
-  type          TransactionType
-  amount        Float
-  currency      Currency
-  balanceBefore Float
-  balanceAfter  Float
-  notes         String?
-  createdBy     Int?
-  createdAt     DateTime        @default(now())
-}
-
-model Announcement {
-  id        Int      @id @default(autoincrement())
-  title     String
-  body      String?
-  imageUrl  String
-  actionUrl String?
-  isActive  Boolean  @default(true)
-  expiresAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model PendingRegistration {
-  id           Int      @id @default(autoincrement())
-  name         String
-  email        String   @unique
-  passwordHash String
-  mobile       String   @unique
-  otp          String
-  expiresAt    DateTime
-  createdAt    DateTime @default(now())
 }

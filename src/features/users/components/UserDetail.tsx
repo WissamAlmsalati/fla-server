@@ -12,6 +12,7 @@ import Image from "next/image";
 import { ArrowRight, Pencil, Trash2, Package, User as UserIcon, Mail, Phone, Shield, Calendar, Box, FileText, Image as ImageIcon, Wallet, TrendingUp, DollarSign, UserX, UserCheck, Copy, Check } from "lucide-react";
 import { EditUserDialog } from "./EditUserDialog";
 import { ManageWalletDialog } from "@/features/customers/components/ManageWalletDialog";
+import { ManageShipmentCodesDialog } from "@/features/customers/components/ManageShipmentCodesDialog";
 import { CustomerOrders } from "./CustomerOrders";
 import { TransactionHistory } from "@/features/transactions/components/TransactionHistory";
 import { TransactionReports } from "@/features/transactions/components/TransactionReports";
@@ -275,9 +276,19 @@ export function UserDetail({ userId }: UserDetailProps) {
 
                     {/* Shipping Codes Grid */}
                     <div className="mt-6 space-y-3">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Box className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium text-muted-foreground">أكواد الشحن:</span>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Box className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium text-muted-foreground">أكواد الشحن:</span>
+                        </div>
+                        <ManageShipmentCodesDialog
+                          customer={{
+                            ...user.customer,
+                            name: user.name,
+                            userId: user.id
+                          } as any}
+                          onSuccess={fetchUser}
+                        />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {/* China Code */}

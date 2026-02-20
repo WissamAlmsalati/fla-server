@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import {
   LayoutDashboard,
   Package,
@@ -11,9 +10,13 @@ import {
   MessageSquare,
   LifeBuoy,
   Search,
-  Command
+  Command,
+  ChevronRight,
+  ChevronLeft
 } from "lucide-react"
 import Image from "next/image"
+import { useRouter } from "next/navigation";
+import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
 
 import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
@@ -33,7 +36,7 @@ const data = {
   user: {
     name: "Admin User",
     email: "admin@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    avatar: "",
   },
   navMain: [
     {
@@ -114,6 +117,39 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useReduxSelector((state) => state.auth);
+  const role = user?.role || "CUSTOMER";
+
+  // Filter navigation items based on role
+  const filteredNavMain = data.navMain.filter(() => {
+    if (role === "ADMIN") return true;
+    return false; // Only admin sees the main dashboard overview for now
+  });
+
+  const filteredShipmentManagement = data.shipmentManagement.filter((item) => {
+    if (role === "ADMIN") return true;
+    if (role === "PURCHASE_OFFICER") return item.url === "/orders";
+    if (role === "CHINA_WAREHOUSE") return item.url === "/orders" || item.url === "/warehouses/china";
+    if (role === "LIBYA_WAREHOUSE") return item.url === "/orders" || item.url === "/warehouses/libya" || item.url === "/warehouses/ready";
+    return false;
+  });
+
+  const filteredUserManagement = data.userManagement.filter(() => {
+    if (role === "ADMIN") return true;
+    return false;
+  });
+
+  const filteredMobileManagement = data.mobileManagement.filter(() => {
+    if (role === "ADMIN") return true;
+    return false;
+  });
+
+  const userData = {
+    name: user?.name || "User",
+    email: user?.email || "",
+    avatar: "",
+  };
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -138,13 +174,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.shipmentManagement} title="إدارة الشحنات" />
-        <NavDocuments items={data.userManagement} title="إدارة المستخدمين" />
-        <NavDocuments items={data.mobileManagement} title="إدارة التطبيق" />
+        {filteredNavMain.length > 0 && <NavMain items={filteredNavMain} />}
+        {filteredShipmentManagement.length > 0 && (
+          <NavDocuments items={filteredShipmentManagement} title="إدارة الشحنات" />
+        )}
+        {filteredUserManagement.length > 0 && (
+          <NavDocuments items={filteredUserManagement} title="إدارة المستخدمين" />
+        )}
+        {filteredMobileManagement.length > 0 && (
+          <NavDocuments items={filteredMobileManagement} title="إدارة التطبيق" />
+        )}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
     </Sidebar>
   )

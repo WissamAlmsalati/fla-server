@@ -19,6 +19,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,7 +56,7 @@ const createOrderSchema = z.object({
   tracking_number: z.string().min(1, "رقم التتبع مطلوب"),
   customer_id: z.string().min(1, "العميل مطلوب"),
   product_url: z.string().optional(),
-  usd_price: z.coerce.number().positive("السعر يجب أن يكون أكبر من 0"),
+  usd_price: z.coerce.number().min(0, "السعر يجب أن يكون 0 أو أكبر"),
   notes: z.string().optional(),
 });
 
@@ -424,6 +425,10 @@ export function CreateOrderDialog() {
                   <FormControl>
                     <Input type="number" step="0.01" {...field} />
                   </FormControl>
+                  <FormDescription className="text-xs">
+                    أدخل السعر إذا قمت بشراء الطلب للزبون (سيتم الخصم من رصيده). 
+                    اترك السعر 0 إذا كان الزبون قد اشترى الطلب بنفسه ومطلوب الشحن فقط.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

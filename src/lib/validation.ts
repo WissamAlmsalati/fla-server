@@ -12,7 +12,7 @@ export const orderFiltersSchema = z.object({
 export const createOrderSchema = z.object({
   tracking_number: z.string().min(1),
   name: z.string().min(1),
-  usd_price: z.number().positive(),
+  usd_price: z.number().min(0).optional(),
   cny_price: z.number().optional(),
   product_url: z.string().url().optional(),
   notes: z.string().optional(),
@@ -31,4 +31,5 @@ export const updateOrderSchema = z.object({
   product_url: z.string().url().optional(),
   notes: z.string().optional(),
   shippingRateId: z.number().optional(),
+  flightNumber: z.string().optional(),
 });

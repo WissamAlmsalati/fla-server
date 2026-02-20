@@ -4,6 +4,7 @@ import { orderFiltersSchema, createOrderSchema } from "@/lib/validation";
 import { parsePaginationMeta } from "@/lib/pagination";
 import { requireAuth } from "@/lib/auth";
 import { requireRole } from "@/lib/rbac";
+import { Prisma } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   try {
@@ -38,9 +39,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (query.search) {
-      // First, try to find an exact match for tracking number
-      const exactMatch = await prisma.order.findUnique({
-        where: { trackingNumber: query.search },
+      // First, try to find an exact match for tracking number or flight number
+      const exactMatch = await prisma.order.findFirst({
+        where: {
+          OR: [
+            { trackingNumber: query.search },
+            { flightNumber: query.search }
+          ]
+        },
         include: {
           customer: {
             include: {
@@ -75,6 +81,7 @@ export async function GET(request: NextRequest) {
 
       where.OR = [
         { trackingNumber: { contains: query.search, mode: "insensitive" } },
+        { flightNumber: { contains: query.search, mode: "insensitive" } },
         { name: { contains: query.search, mode: "insensitive" } },
         {
           customer: {
@@ -145,19 +152,73 @@ export async function POST(request: Request) {
     const user = await requireAuth(request);
     requireRole(user.role, ["ADMIN", "PURCHASE_OFFICER"]);
     const body = createOrderSchema.parse(await request.json());
-    const order = await prisma.order.create({
-      data: {
-        trackingNumber: body.tracking_number,
-        name: body.name,
-        usdPrice: body.usd_price,
-        cnyPrice: body.cny_price,
-        productUrl: body.product_url,
-        notes: body.notes,
-        weight: body.weight,
-        customerId: body.customer_id,
-        country: body.country,
-      },
+
+    // Check if tracking number already exists
+    const existingOrder = await prisma.order.findUnique({
+      where: { trackingNumber: body.tracking_number }
     });
+
+    if (existingOrder) {
+      return NextResponse.json(
+        { error: "رقم التتبع هذا موجود مسبقاً في النظام" },
+        { status: 400 }
+      );
+    }
+
+    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Create the order
+      const newOrder = await tx.order.create({
+        data: {
+          trackingNumber: body.tracking_number,
+          name: body.name,
+          usdPrice: body.usd_price || 0, // Fallback to 0 if not provided
+          cnyPrice: body.cny_price,
+          productUrl: body.product_url,
+          notes: body.notes,
+          weight: body.weight,
+          customerId: body.customer_id,
+          country: body.country,
+          logs: {
+            create: {
+              status: "purchased"
+            }
+          }
+        },
+      });
+
+      // If a price is provided, deduct from customer balance and create transaction
+      if (body.usd_price && body.usd_price > 0 && body.customer_id) {
+        const customer = await tx.customer.findUnique({
+          where: { id: body.customer_id }
+        });
+
+        if (customer) {
+          const balanceBefore = customer.balanceUSD;
+          const balanceAfter = balanceBefore - body.usd_price;
+
+          await tx.customer.update({
+            where: { id: body.customer_id },
+            data: { balanceUSD: balanceAfter }
+          });
+
+          await tx.transaction.create({
+            data: {
+              customerId: body.customer_id,
+              type: "WITHDRAWAL",
+              amount: body.usd_price,
+              currency: "USD",
+              balanceBefore: balanceBefore,
+              balanceAfter: balanceAfter,
+              notes: `خصم سعر الطلب - ${newOrder.name} (#${newOrder.trackingNumber})`,
+              createdBy: user.sub,
+            }
+          });
+        }
+      }
+
+      return newOrder;
+    });
+
     return NextResponse.json({ data: order }, { status: 201 });
   } catch (error) {
     return NextResponse.json(

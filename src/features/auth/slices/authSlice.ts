@@ -1,7 +1,13 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 type AuthState = {
-  user: { id: number; role: string } | null;
+  user: {
+    id: number;
+    role: string;
+    name: string;
+    email: string;
+    customerId?: number | null;
+  } | null;
   status: "idle" | "loading" | "succeeded" | "failed";
 };
 
@@ -14,7 +20,13 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setUser(state, action: PayloadAction<{ id: number; role: string }>) {
+    setUser(state, action: PayloadAction<{
+      id: number;
+      role: string;
+      name: string;
+      email: string;
+      customerId?: number | null;
+    }>) {
       state.user = action.payload;
       state.status = "succeeded";
     },

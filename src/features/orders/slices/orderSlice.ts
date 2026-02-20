@@ -21,6 +21,7 @@ export type Order = {
   };
   productUrl?: string;
   notes?: string;
+  flightNumber?: string;
   createdAt: string;
   updatedAt: string;
   country?: string;
@@ -36,6 +37,12 @@ export type Order = {
     };
   };
   unreadCount?: number;
+  logs?: {
+    id: number;
+    status: string;
+    note?: string;
+    createdAt: string;
+  }[];
 };
 
 type OrdersState = {

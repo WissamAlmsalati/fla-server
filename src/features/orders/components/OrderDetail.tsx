@@ -56,7 +56,7 @@ const statusConfig: Record<string, { icon: any; color: string; bgColor: string }
   delivered: { icon: CheckCircle, color: "text-green-600", bgColor: "bg-green-50" },
 };
 
-const StatusTimeline = ({ currentStatus, country }: { currentStatus: string; country?: string | null }) => {
+const StatusTimeline = ({ currentStatus, country, logs }: { currentStatus: string; country?: string | null; logs?: { status: string; createdAt: string }[] }) => {
   const currentIndex = STATUS_ORDER.indexOf(currentStatus);
 
   return (
@@ -74,6 +74,9 @@ const StatusTimeline = ({ currentStatus, country }: { currentStatus: string; cou
             const Icon = config.icon;
             const isCompleted = index <= currentIndex;
             const isCurrent = index === currentIndex;
+            // Find the most recent log for this status by searching backwards (since they are ordered ascending typically)
+            // fallback to any log if findLast isn't available
+            const log = logs?.slice().reverse().find((l) => l.status === status) || logs?.find((l) => l.status === status);
 
             return (
               <div key={status} className="flex items-center gap-3">
@@ -82,12 +85,17 @@ const StatusTimeline = ({ currentStatus, country }: { currentStatus: string; cou
                 } ${isCompleted ? config.color : 'text-gray-400'}`}>
                   <Icon className="h-4 w-4" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 px-2">
                   <div className={`font-medium ${isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
                     {getStatusLabel(status, country)}
                   </div>
                   {isCurrent && (
-                    <div className="text-sm text-muted-foreground">الحالة الحالية</div>
+                    <div className="text-sm text-muted-foreground font-semibold">الحالة الحالية</div>
+                  )}
+                  {log && (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {format(new Date(log.createdAt), "dd MMM yyyy, HH:mm", { locale: ar })}
+                    </div>
                   )}
                 </div>
                 {isCompleted && (
@@ -235,6 +243,17 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
                       {order.shippingCost ? `$${order.shippingCost}` : "-"}
                     </span>
                   </div>
+                  {order.flightNumber && (
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <Truck className="h-4 w-4" />
+                        رقم الرحلة
+                      </span>
+                      <span className="font-bold font-mono text-primary">
+                        {order.flightNumber}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <span className="text-muted-foreground flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
@@ -355,7 +374,7 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
 
         {/* Right Column - Status Timeline */}
         <div className="lg:col-span-1">
-          <StatusTimeline currentStatus={order.status} country={order.country} />
+          <StatusTimeline currentStatus={order.status} country={order.country} logs={order.logs} />
         </div>
       </div>
 

@@ -38,13 +38,67 @@ export async function PATCH(
             );
         }
 
-        // Approve the user
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: { approved: true },
-            include: {
-                customer: true,
-            },
+        // Approve the user and create customer record in a transaction
+        const updatedUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+            // First check if user already has a customer ID (edge case)
+            if (user.customerId) {
+                return await tx.user.update({
+                    where: { id: userId },
+                    data: { approved: true },
+                    include: { customer: true }
+                });
+            }
+
+            // Generate sequential code logic
+            const lastCustomer = await tx.customer.findFirst({
+                where: {
+                    code: {
+                        startsWith: "KO219-FLL"
+                    }
+                },
+                orderBy: {
+                    id: "desc"
+                }
+            });
+
+            let nextCode = "KO219-FLL1";
+            let nextDubaiCode = "BSB FLL D1";
+            let nextUsaCode = "Global FLL 1";
+            let nextTurkeyCode = "ABUHAJ FLL 1";
+
+            if (lastCustomer) {
+                const match = lastCustomer.code.match(/KO219-FLL(\d+)/);
+                if (match) {
+                    const lastNumber = parseInt(match[1]);
+                    const nextNumber = lastNumber + 1;
+                    nextCode = `KO219-FLL${nextNumber}`;
+                    nextDubaiCode = `BSB FLL D${nextNumber}`;
+                    nextUsaCode = `Global FLL ${nextNumber}`;
+                    nextTurkeyCode = `ABUHAJ FLL ${nextNumber}`;
+                }
+            }
+
+            // Create Customer
+            const newCustomer = await tx.customer.create({
+                data: {
+                    name: user.name,
+                    userId: user.id,
+                    code: nextCode,
+                    dubaiCode: nextDubaiCode,
+                    usaCode: nextUsaCode,
+                    turkeyCode: nextTurkeyCode,
+                },
+            });
+
+            // Update User with customerId and approved status
+            return await tx.user.update({
+                where: { id: userId },
+                data: {
+                    customerId: newCustomer.id,
+                    approved: true
+                },
+                include: { customer: true }
+            });
         });
 
         return NextResponse.json({

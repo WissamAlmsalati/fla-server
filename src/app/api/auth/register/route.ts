@@ -57,7 +57,6 @@ export async function POST(request: Request) {
         });
 
         // In a real app, send OTP via SMS/Email here.
-        // In a real app, send OTP via SMS/Email here.
         console.log("\n\n=======================================================");
         console.log("🔐🔐🔐 NEW OTP GENERATED 🔐🔐🔐");
         console.log(`👉 EMAIL: ${payload.email}`);

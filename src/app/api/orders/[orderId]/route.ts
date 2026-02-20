@@ -4,6 +4,8 @@ import { updateOrderSchema } from "@/lib/validation";
 import { requireAuth } from "@/lib/auth";
 import { requireRole } from "@/lib/rbac";
 import { Prisma } from "@prisma/client";
+import { sendNotificationToUser } from "@/lib/notifications";
+import { getStatusLabel } from "@/lib/orderStatus";
 
 export async function GET(
   request: Request,
@@ -23,6 +25,11 @@ export async function GET(
           },
         },
         shippingRate: true,
+        logs: {
+          orderBy: {
+            createdAt: 'asc'
+          }
+        },
       },
     });
 
@@ -63,13 +70,35 @@ export async function PATCH(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Role-based logic
-    if (user.role === "CHINA_WAREHOUSE") {
-      // China warehouse can only update weight and status to arrived_to_china
-      // We allow them to update these fields.
-      // We might want to restrict other fields, but for now we trust the client/schema.
+    // Role-based logic enforcement
+    if (user.role === "PURCHASE_OFFICER") {
+      // Purchase officer CANNOT change status
+      if (data.status && data.status !== order.status) {
+        return NextResponse.json({ error: "لا يملك مسؤول المشتريات صلاحية تغيير حالة الطلب" }, { status: 403 });
+      }
+    } else if (user.role === "CHINA_WAREHOUSE") {
+      // China warehouse can only update weight and status to arrived_to_china or shipping_to_libya
+      const allowedStatuses = ["purchased", "arrived_to_china", "shipping_to_libya"];
+      if (data.status && !allowedStatuses.includes(data.status)) {
+        return NextResponse.json({ error: "مخزن الصين يمكنه فقط التغيير إلى 'وصل للمخزن' أو 'جاري الشحن'" }, { status: 403 });
+      }
+      // Restricted fields for warehouse
+      if (data.name || data.usd_price || data.cny_price || data.product_url) {
+        return NextResponse.json({ error: "لا يملك المخزن صلاحية تعديل بيانات الطلب الأساسية" }, { status: 403 });
+      }
+    } else if (user.role === "LIBYA_WAREHOUSE") {
+      // Libya warehouse transitions
+      const allowedStatuses = ["shipping_to_libya", "arrived_libya", "ready_for_pickup", "delivered"];
+      if (data.status && !allowedStatuses.includes(data.status)) {
+        return NextResponse.json({ error: "مخزن ليبيا يمكنه التغيير فقط للحالات المحلية" }, { status: 403 });
+      }
+      if (data.name || data.usd_price || data.cny_price || data.product_url) {
+        return NextResponse.json({ error: "لا يملك المخزن صلاحية تعديل بيانات الطلب الأساسية" }, { status: 403 });
+      }
+    } else if (user.role === "ADMIN") {
+      // Admin has full access
     } else {
-      requireRole(user.role, ["ADMIN", "PURCHASE_OFFICER"]);
+      return NextResponse.json({ error: "صلاحية غير معروفة" }, { status: 403 });
     }
 
     const updatedOrder = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -186,6 +215,16 @@ export async function PATCH(
           // Snapshot shipping rate details if available
           shippingRateName: data.shippingRateId && shippingCost !== undefined ? (await tx.shippingRate.findUnique({ where: { id: data.shippingRateId } }))?.name : order.shippingRateName,
           shippingRatePrice: data.shippingRateId && shippingCost !== undefined ? (await tx.shippingRate.findUnique({ where: { id: data.shippingRateId } }))?.price : order.shippingRatePrice,
+          flightNumber: data.flightNumber,
+          ...(data.status && data.status !== order.status
+            ? {
+              logs: {
+                create: {
+                  status: data.status as any,
+                },
+              },
+            }
+            : {}),
         },
         include: {
           customer: {
@@ -194,9 +233,28 @@ export async function PATCH(
             },
           },
           shippingRate: true,
+          logs: {
+            orderBy: {
+              createdAt: 'asc'
+            }
+          },
         },
       });
     });
+
+    const orderWithCustomer = updatedOrder as any;
+    if (data.status && data.status !== order.status && orderWithCustomer.customer?.user?.fcmTokens?.length) {
+      const statusLabel = getStatusLabel(data.status, updatedOrder.country);
+      await sendNotificationToUser(
+        orderWithCustomer.customer.user.fcmTokens,
+        "تحديث حالة الطلب",
+        `تم تغيير حالة الطلب ${updatedOrder.trackingNumber} إلى ${statusLabel}`,
+        {
+          orderId: updatedOrder.id.toString(),
+          type: "status_update"
+        }
+      );
+    }
 
     return NextResponse.json(updatedOrder);
   } catch (error) {
