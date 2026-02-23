@@ -46,6 +46,7 @@ import {
 import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
 import { addOrder, loadOrders } from "../slices/orderSlice";
 import { fetchCustomers } from "@/features/customers/slices/customerSlice";
+import { fetchFlights } from "@/features/flights/slices/flightSlice";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown, Loader2, Scan, Upload, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -58,6 +59,7 @@ const createOrderSchema = z.object({
   product_url: z.string().optional(),
   usd_price: z.coerce.number().min(0, "السعر يجب أن يكون 0 أو أكبر"),
   notes: z.string().optional(),
+  flightId: z.string().optional(),
 });
 
 type CreateOrderFormValues = z.infer<typeof createOrderSchema>;
@@ -71,7 +73,10 @@ export function CreateOrderDialog() {
   
   const dispatch = useReduxDispatch();
   const { list: customers } = useReduxSelector((state) => state.customers);
+  const { list: flights } = useReduxSelector((state) => state.flights);
   const qrInputRef = useRef<HTMLInputElement>(null);
+  
+  const [flightOpen, setFlightOpen] = useState(false);
 
   const form = useForm<CreateOrderFormValues>({
     resolver: zodResolver(createOrderSchema),
@@ -82,12 +87,14 @@ export function CreateOrderDialog() {
       product_url: "",
       usd_price: 0,
       notes: "",
+      flightId: "",
     },
   });
 
   useEffect(() => {
     if (open) {
       dispatch(fetchCustomers());
+      dispatch(fetchFlights());
     }
   }, [open, dispatch]);
 
@@ -102,6 +109,7 @@ export function CreateOrderDialog() {
           notes: data.notes || undefined,
           product_url: data.product_url || undefined,
           country: selectedRegion,
+          flightId: data.flightId ? parseInt(data.flightId) : undefined,
         })
       ).unwrap();
       
@@ -127,10 +135,7 @@ export function CreateOrderDialog() {
     }
   };
 
-  const filteredCustomers = customers.filter((customer) => {
-    const code = getCustomerCode(customer);
-    return code && code !== "-";
-  });
+  const filteredCustomers = customers;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -338,7 +343,7 @@ export function CreateOrderDialog() {
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>العميل</FormLabel>
-                  <Popover open={customerOpen} onOpenChange={setCustomerOpen} modal={true}>
+                  <Popover open={customerOpen} onOpenChange={setCustomerOpen} modal={false}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -364,7 +369,7 @@ export function CreateOrderDialog() {
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0" align="start">
+                    <PopoverContent className="w-[400px] p-0 pointer-events-auto" align="start">
                       <Command>
                         <CommandInput placeholder={`بحث عن عميل (${selectedRegion === 'CHINA' ? 'كود الصين' : selectedRegion === 'DUBAI' ? 'كود دبي' : selectedRegion === 'USA' ? 'كود أمريكا' : 'كود تركيا'})...`} />
                         <CommandList>
@@ -381,6 +386,7 @@ export function CreateOrderDialog() {
                                     setCustomerOpen(false);
                                   }}
                                   className="cursor-pointer"
+                                  style={{ pointerEvents: 'auto' }}
                                 >
                                   <Check
                                     className={cn(
@@ -429,6 +435,79 @@ export function CreateOrderDialog() {
                     أدخل السعر إذا قمت بشراء الطلب للزبون (سيتم الخصم من رصيده). 
                     اترك السعر 0 إذا كان الزبون قد اشترى الطلب بنفسه ومطلوب الشحن فقط.
                   </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="flightId"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>الرحلة (اختياري)</FormLabel>
+                  <Popover open={flightOpen} onOpenChange={setFlightOpen} modal={false}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={flightOpen}
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value
+                            ? flights.find((f) => f.id.toString() === field.value)?.flightNumber
+                            : "اختر الرحلة"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0 pointer-events-auto" align="start">
+                      <Command>
+                        <CommandInput placeholder="بحث برقم الرحلة..." />
+                        <CommandList>
+                          <CommandEmpty>لم يتم العثور على رحلة.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="none"
+                              onSelect={() => {
+                                form.setValue("flightId", "");
+                                setFlightOpen(false);
+                              }}
+                              className="cursor-pointer font-bold text-red-500"
+                              style={{ pointerEvents: 'auto' }}
+                            >
+                              إلغاء التحديد
+                            </CommandItem>
+                            {flights.filter(f => f.status !== "delivered").map((flight) => (
+                              <CommandItem
+                                value={flight.flightNumber}
+                                key={flight.id}
+                                onSelect={() => {
+                                  form.setValue("flightId", flight.id.toString());
+                                  setFlightOpen(false);
+                                }}
+                                className="cursor-pointer"
+                                style={{ pointerEvents: 'auto' }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    flight.id.toString() === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {flight.flightNumber} ({flight.country === 'CHINA' ? 'الصين' : flight.country === 'DUBAI' ? 'دبي' : flight.country === 'USA' ? 'أمريكا' : 'تركيا'})
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}

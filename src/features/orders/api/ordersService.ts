@@ -36,6 +36,7 @@ export async function createOrder(payload: {
   cny_price?: number;
   weight?: number;
   country?: string;
+  flightId?: number;
 }) {
   const token = localStorage.getItem("token");
   const response = await fetch("/api/orders", {
@@ -60,6 +61,7 @@ export async function updateOrder(id: number, payload: {
   notes?: string;
   shippingRateId?: number;
   flightNumber?: string;
+  flightId?: number;
 }) {
   const token = localStorage.getItem("token");
   const response = await fetch(`/api/orders/${id}`, {

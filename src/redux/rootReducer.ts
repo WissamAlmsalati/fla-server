@@ -9,6 +9,7 @@ import customerReducer from "@/features/customers/slices/customerSlice";
 import shippingReducer from "@/features/shipping/slices/shippingSlice";
 import transactionReducer from "@/features/transactions/slices/transactionSlice";
 import announcementReducer from "@/features/announcements/slices/announcementSlice";
+import flightReducer from "@/features/flights/slices/flightSlice";
 
 export const rootReducer = combineReducers({
   auth: authReducer,
@@ -21,4 +22,5 @@ export const rootReducer = combineReducers({
   shipping: shippingReducer,
   transactions: transactionReducer,
   announcements: announcementReducer,
+  flights: flightReducer,
 });

@@ -61,7 +61,9 @@ model Order {
   shippingRateName  String?
   shippingRatePrice Float?
   flightNumber      String?
+  flightId          Int?
   customer          Customer?      @relation(fields: [customerId], references: [id])
+  flight            Flight?        @relation(fields: [flightId], references: [id])
   shippingRate      ShippingRate?  @relation(fields: [shippingRateId], references: [id])
   logs              OrderLog[]
   messages          OrderMessage[]
@@ -143,6 +145,18 @@ model Transaction {
   createdBy     Int?
   createdAt     DateTime        @default(now())
   customer      Customer        @relation(fields: [customerId], references: [id])
+}
+
+model Flight {
+  id            Int       @id @default(autoincrement())
+  flightNumber  String    @unique
+  status        String    @default("pending") // pending, departed, arrived
+  departureDate DateTime?
+  arrivalDate   DateTime?
+  country       String?   @default("CHINA")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  orders        Order[]
 }
 
 model Announcement {

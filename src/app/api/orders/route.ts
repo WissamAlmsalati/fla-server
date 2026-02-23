@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
             },
           },
           shippingRate: true,
+          flight: true,
         },
       });
 
@@ -113,6 +114,7 @@ export async function GET(request: NextRequest) {
           },
         },
         shippingRate: true,
+        flight: true,
       },
     });
 
@@ -178,6 +180,7 @@ export async function POST(request: Request) {
           weight: body.weight,
           customerId: body.customer_id,
           country: body.country,
+          flightId: body.flightId,
           logs: {
             create: {
               status: "purchased"

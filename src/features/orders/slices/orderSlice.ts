@@ -22,6 +22,12 @@ export type Order = {
   productUrl?: string;
   notes?: string;
   flightNumber?: string;
+  flightId?: number;
+  flight?: {
+    id: number;
+    flightNumber: string;
+    country?: string;
+  };
   createdAt: string;
   updatedAt: string;
   country?: string;

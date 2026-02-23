@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
 import { updateOrder, Order } from "../slices/orderSlice";
 import { loadRates } from "../../shipping/slices/shippingSlice";
+import { fetchFlights } from "@/features/flights/slices/flightSlice";
 import {
   Sheet,
   SheetClose,
@@ -20,14 +21,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Copy, ExternalLink, Printer } from "lucide-react";
+import { Copy, ExternalLink, Printer, Check, ChevronsUpDown } from "lucide-react";
 import { getStatusLabel, getCountryName } from "@/lib/orderStatus";
+import { cn } from "@/lib/utils";
 import { generateStickerLabel } from "@/lib/generateStickerLabel";
 
 interface OrderDetailsDrawerProps {
@@ -51,11 +66,13 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
   const { user } = useReduxSelector((state) => state.auth);
   const role = user?.role || "CUSTOMER";
   const { rates, status: ratesStatus } = useReduxSelector((state) => state.shipping);
+  const { list: flights } = useReduxSelector((state) => state.flights);
   const [status, setStatus] = useState(order?.status || "");
   const [weight, setWeight] = useState<string>("");
   const [shippingType, setShippingType] = useState<string>("");
   const [shippingRateId, setShippingRateId] = useState<string>("");
-  const [flightNumber, setFlightNumber] = useState<string>("");
+  const [flightId, setFlightId] = useState<string>("");
+  const [flightOpen, setFlightOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -70,7 +87,7 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
         setShippingRateId("");
       }
       setShippingType(""); 
-      setFlightNumber(order.flightNumber || "");
+      setFlightId(order.flightId?.toString() || "");
     }
   }, [order]);
 
@@ -87,6 +104,7 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
   useEffect(() => {
     if (open) {
       dispatch(loadRates());
+      dispatch(fetchFlights());
     }
   }, [open, dispatch]);
 
@@ -106,19 +124,12 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
     if (status === order.status && 
         weight === (order.weight?.toString() || "") && 
         shippingRateId === (order.shippingRateId?.toString() || "") &&
-        flightNumber === (order.flightNumber || "")) {
+        flightId === (order.flightId?.toString() || "")) {
       return;
     }
 
-    // Validate status progression - prevent skipping statuses
+    // Validate status progression - prevent skipping statuses has been disabled per user request
     // Allow canceling from any status
-    if (status !== "canceled") {
-      const newStatusIndex = STATUS_ORDER.indexOf(status);
-      if (newStatusIndex > currentStatusIndex + 1) {
-        toast.error(`لا يمكن تجاوز الحالات. يجب إكمال الحالة الحالية "${getStatusLabel(order.status, order.country)}" أولاً`);
-        return;
-      }
-    }
 
     if (status === "shipping_to_libya" && (!shippingType || !weight || !shippingRateId) && status !== order.status) {
       toast.error("يرجى اختيار طريقة الشحن ونوع الشحن وإدخال الوزن عند الشحن إلى ليبيا");
@@ -133,7 +144,7 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
           status,
           weight: weight ? parseFloat(weight) : undefined,
           shippingRateId: shippingRateId ? parseInt(shippingRateId) : undefined,
-          flightNumber: flightNumber || undefined
+          flightId: flightId ? parseInt(flightId) : undefined
         } 
       })).unwrap();
       toast.success("تم تحديث حالة الطلب بنجاح");
@@ -230,7 +241,6 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                     // Warehouse staff can only see their current status and the next one
                     // NOTE: This logic assumes they are on their respective page/view
                     if (role === "CHINA_WAREHOUSE" || role === "LIBYA_WAREHOUSE") {
-                      if (optionIndex < currentStatusIndex || optionIndex > currentStatusIndex + 1) return null;
                       
                       // China warehouse can only move to arrived_to_china or shipping_to_libya
                       if (role === "CHINA_WAREHOUSE" && !["purchased", "arrived_to_china", "shipping_to_libya"].includes(key)) return null;
@@ -238,9 +248,6 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                       // Libya warehouse can only move to arrived_libya or ready_for_pickup
                       if (role === "LIBYA_WAREHOUSE" && !["shipping_to_libya", "arrived_libya", "ready_for_pickup", "delivered"].includes(key)) return null;
                     }
-
-                    // Default rule: Only show current status and next valid status
-                    if (optionIndex < currentStatusIndex || optionIndex > currentStatusIndex + 1) return null;
                     
                     return (
                       <SelectItem key={key} value={key}>
@@ -345,15 +352,69 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="flightNumber">رقم الرحلة (اختياري)</Label>
-                  <Input
-                    id="flightNumber"
-                    type="text"
-                    value={flightNumber}
-                    onChange={(e) => setFlightNumber(e.target.value)}
-                    placeholder="أدخل رقم الرحلة..."
-                    className="text-right font-mono"
-                  />
+                  <Label>الرحلة (اختياري)</Label>
+                  <Popover open={flightOpen} onOpenChange={setFlightOpen} modal={false}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={flightOpen}
+                        className={cn(
+                          "w-full justify-between",
+                          !flightId && "text-muted-foreground"
+                        )}
+                        disabled={role === "PURCHASE_OFFICER"}
+                      >
+                        {flightId
+                          ? flights.find((f) => f.id.toString() === flightId)?.flightNumber
+                          : "اختر الرحلة"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0 pointer-events-auto" align="start">
+                      <Command>
+                        <CommandInput placeholder="بحث برقم الرحلة..." />
+                        <CommandList>
+                          <CommandEmpty>لم يتم العثور على رحلة.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="none"
+                              onSelect={() => {
+                                setFlightId("");
+                                setFlightOpen(false);
+                              }}
+                              className="cursor-pointer font-bold text-red-500"
+                              style={{ pointerEvents: 'auto' }}
+                            >
+                              إلغاء التحديد
+                            </CommandItem>
+                            {flights.filter(f => f.status !== "delivered").map((flight) => (
+                              <CommandItem
+                                value={flight.flightNumber}
+                                key={flight.id}
+                                onSelect={() => {
+                                  setFlightId(flight.id.toString());
+                                  setFlightOpen(false);
+                                }}
+                                className="cursor-pointer"
+                                style={{ pointerEvents: 'auto' }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    flight.id.toString() === flightId
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {flight.flightNumber} ({flight.country === 'CHINA' ? 'الصين' : flight.country === 'DUBAI' ? 'دبي' : flight.country === 'USA' ? 'أمريكا' : 'تركيا'})
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {calculatedCost > 0 && (
@@ -396,7 +457,7 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                 (status === order.status && 
                  weight === (order.weight?.toString() || "") && 
                  shippingRateId === (order.shippingRateId?.toString() || "") &&
-                 flightNumber === (order.flightNumber || ""))
+                 flightId === (order.flightId?.toString() || ""))
               }
             >
               {loading ? "جاري الحفظ..." : "حفظ التغييرات"}

@@ -25,6 +25,7 @@ export async function GET(
           },
         },
         shippingRate: true,
+        flight: true,
         logs: {
           orderBy: {
             createdAt: 'asc'
@@ -216,6 +217,7 @@ export async function PATCH(
           shippingRateName: data.shippingRateId && shippingCost !== undefined ? (await tx.shippingRate.findUnique({ where: { id: data.shippingRateId } }))?.name : order.shippingRateName,
           shippingRatePrice: data.shippingRateId && shippingCost !== undefined ? (await tx.shippingRate.findUnique({ where: { id: data.shippingRateId } }))?.price : order.shippingRatePrice,
           flightNumber: data.flightNumber,
+          flightId: data.flightId,
           ...(data.status && data.status !== order.status
             ? {
               logs: {
@@ -233,6 +235,7 @@ export async function PATCH(
             },
           },
           shippingRate: true,
+          flight: true,
           logs: {
             orderBy: {
               createdAt: 'asc'

@@ -19,6 +19,7 @@ export const createOrderSchema = z.object({
   customer_id: z.number(),
   weight: z.number().optional(),
   country: z.string().default("CHINA"),
+  flightId: z.number().optional(),
 });
 
 export const updateOrderSchema = z.object({
@@ -32,4 +33,5 @@ export const updateOrderSchema = z.object({
   notes: z.string().optional(),
   shippingRateId: z.number().optional(),
   flightNumber: z.string().optional(),
+  flightId: z.number().optional(),
 });

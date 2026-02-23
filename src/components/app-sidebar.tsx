@@ -12,7 +12,8 @@ import {
   Search,
   Command,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Plane
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation";
@@ -57,6 +58,11 @@ const data = {
       name: "تم الشراء",
       url: "/warehouses/purchased",
       icon: Package,
+    },
+    {
+      name: "الرحلات",
+      url: "/flights",
+      icon: Plane,
     },
     {
       name: "المخزن الخارجي",
@@ -129,8 +135,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const filteredShipmentManagement = data.shipmentManagement.filter((item) => {
     if (role === "ADMIN") return true;
     if (role === "PURCHASE_OFFICER") return item.url === "/orders";
-    if (role === "CHINA_WAREHOUSE") return item.url === "/orders" || item.url === "/warehouses/china";
-    if (role === "LIBYA_WAREHOUSE") return item.url === "/orders" || item.url === "/warehouses/libya" || item.url === "/warehouses/ready";
+    if (role === "CHINA_WAREHOUSE") return item.url === "/orders" || item.url === "/warehouses/china" || item.url === "/flights";
+    if (role === "LIBYA_WAREHOUSE") return item.url === "/orders" || item.url === "/warehouses/libya" || item.url === "/warehouses/ready" || item.url === "/flights";
     return false;
   });
 

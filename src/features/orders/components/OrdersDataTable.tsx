@@ -60,6 +60,7 @@ const exportOrders = (orders: Order[]) => {
   
   const dataToExport = orders.map(order => ({
     ...order,
+    flightNumber: order.flight?.flightNumber || order.flightNumber || "-",
     status: statusMap[order.status] || order.status,
     createdAt: format(new Date(order.createdAt), "dd MMMM yyyy", { locale: ar }),
     updatedAt: format(new Date(order.updatedAt), "dd MMMM yyyy", { locale: ar }),
@@ -160,7 +161,7 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
                   </Badge>
                 </TableCell>
                 <TableCell>{order.shippingCost ? `$${order.shippingCost}` : "-"}</TableCell>
-                <TableCell className="font-mono">{order.flightNumber || "-"}</TableCell>
+                <TableCell className="font-mono">{order.flight?.flightNumber || order.flightNumber || "-"}</TableCell>
                 <TableCell>
                   <Badge variant={order.status === "canceled" ? "destructive" : "outline"}>
                     {statusMap[order.status] || order.status}

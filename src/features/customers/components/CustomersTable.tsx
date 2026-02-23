@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
 import { fetchCustomers, deleteCustomer } from "../slices/customerSlice";
@@ -55,8 +55,12 @@ export function CustomersTable({ filters }: CustomersTableProps) {
   const dispatch = useReduxDispatch();
   const { list: customers, status, error } = useReduxSelector((state) => state.customers);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
+
   useEffect(() => {
     dispatch(fetchCustomers(filters));
+    setCurrentPage(1); // Reset page on filter change
   }, [dispatch, JSON.stringify(filters)]);
 
   if (status === "loading") {
@@ -86,7 +90,7 @@ export function CustomersTable({ filters }: CustomersTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {customers.map((customer) => {
+          {customers.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map((customer) => {
             if (!customer.user) return null;
             return (
               <TableRow
@@ -125,6 +129,35 @@ export function CustomersTable({ filters }: CustomersTableProps) {
         </TableBody>
       </Table>
     </div>
+      
+      {customers.length > ITEMS_PER_PAGE && (
+        <div className="flex items-center justify-between py-4">
+          <p className="text-sm text-muted-foreground">
+            عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} إلى {Math.min(currentPage * ITEMS_PER_PAGE, customers.length)} من أصل {customers.length} عميل
+          </p>
+          <div className="flex space-x-2 space-x-reverse">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              السابق
+            </Button>
+            <div className="flex items-center justify-center px-4 text-sm font-medium">
+              صفحة {currentPage} من {Math.ceil(customers.length / ITEMS_PER_PAGE)}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.min(Math.ceil(customers.length / ITEMS_PER_PAGE), p + 1))}
+              disabled={currentPage >= Math.ceil(customers.length / ITEMS_PER_PAGE)}
+            >
+              التالي
+            </Button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
