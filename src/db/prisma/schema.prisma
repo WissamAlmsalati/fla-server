@@ -148,9 +148,10 @@ model Transaction {
 }
 
 model Flight {
-  id            Int       @id @default(autoincrement())
-  flightNumber  String    @unique
-  status        String    @default("pending") // pending, departed, arrived
+  id            Int           @id @default(autoincrement())
+  flightNumber  String        @unique
+  status        String        @default("pending") // pending, departed, arrived
+  type          ShippingType? @default(AIR)
   departureDate DateTime?
   arrivalDate   DateTime?
   country       String?   @default("CHINA")

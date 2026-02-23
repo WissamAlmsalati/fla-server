@@ -17,6 +17,7 @@ const updateFlightSchema = z.object({
     departureDate: z.string().optional().nullable(),
     arrivalDate: z.string().optional().nullable(),
     country: z.string().optional(),
+    type: z.enum(["AIR", "SEA"]).optional(),
 });
 
 export async function GET(
@@ -72,6 +73,7 @@ export async function PATCH(
         if (payload.flightNumber !== undefined) updateData.flightNumber = payload.flightNumber;
         if (payload.status !== undefined) updateData.status = payload.status;
         if (payload.country !== undefined) updateData.country = payload.country;
+        if (payload.type !== undefined) updateData.type = payload.type as "AIR" | "SEA";
         if (payload.departureDate !== undefined) updateData.departureDate = payload.departureDate ? new Date(payload.departureDate) : null;
         if (payload.arrivalDate !== undefined) updateData.arrivalDate = payload.arrivalDate ? new Date(payload.arrivalDate) : null;
 

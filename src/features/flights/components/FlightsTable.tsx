@@ -34,6 +34,11 @@ const statusMap: Record<string, { label: string; color: string }> = {
   arrived: { label: "وصلت", color: "bg-green-100 text-green-800 hover:bg-green-100" },
 };
 
+const typeMap: Record<string, { label: string; color: string }> = {
+  AIR: { label: "جوي", color: "bg-indigo-100 text-indigo-800" },
+  SEA: { label: "بحري", color: "bg-cyan-100 text-cyan-800" },
+};
+
 const countryMap: Record<string, string> = {
   CHINA: "الصين",
   DUBAI: "دبي",
@@ -61,6 +66,16 @@ export function FlightsTable({ filters }: FlightsTableProps) {
     }
   };
 
+  const handleTypeChange = async (flightId: number, newType: string) => {
+    try {
+      await dispatch(updateFlight({ id: flightId, data: { type: newType as "AIR" | "SEA" } })).unwrap();
+      toast.success("تم تحديث نوع الشحن");
+      dispatch(fetchFlights(filters?.search as string | undefined));
+    } catch (err: any) {
+      toast.error(err.message || "فشل تحديث نوع الشحن");
+    }
+  };
+
   if (status === "loading") {
     return <div className="text-center p-4">جاري التحميل...</div>;
   }
@@ -81,6 +96,7 @@ export function FlightsTable({ filters }: FlightsTableProps) {
             <TableHead className="text-right">تاريخ الإقلاع</TableHead>
             <TableHead className="text-right">تاريخ الوصول</TableHead>
             <TableHead className="text-right text-center">عدد الطلبات المربوطة</TableHead>
+            <TableHead className="text-right">نوع الشحن</TableHead>
             <TableHead className="text-right">الحالة</TableHead>
             <TableHead className="text-right">تقرير</TableHead>
           </TableRow>
@@ -101,6 +117,11 @@ export function FlightsTable({ filters }: FlightsTableProps) {
               <TableCell className="text-center">
                 <Badge variant="outline" className="text-base px-3 py-1 bg-slate-50">
                   {flight._count?.orders || 0}
+                </Badge>
+              </TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                <Badge className={flight.type && typeMap[flight.type] ? typeMap[flight.type].color : typeMap["AIR"].color}>
+                  {flight.type ? typeMap[flight.type]?.label : "جوي"}
                 </Badge>
               </TableCell>
               <TableCell onClick={(e) => e.stopPropagation()}>
@@ -140,7 +161,7 @@ export function FlightsTable({ filters }: FlightsTableProps) {
           ))}
           {flights.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="text-center h-24">
+              <TableCell colSpan={8} className="text-center h-24">
                 لا يوجد رحلات مسجلة
               </TableCell>
             </TableRow>

@@ -35,6 +35,7 @@ const formSchema = z.object({
   flightNumber: z.string().min(2, "رقم الرحلة / اسم الشحنة مطلوب"),
   status: z.string(),
   country: z.string(),
+  type: z.enum(["AIR", "SEA"]),
   departureDate: z.string().optional(),
   arrivalDate: z.string().optional(),
 });
@@ -49,6 +50,7 @@ export function AddFlightDialog() {
       flightNumber: "",
       status: "pending",
       country: "CHINA",
+      type: "AIR",
       departureDate: "",
       arrivalDate: "",
     },
@@ -137,6 +139,28 @@ export function AddFlightDialog() {
                       <SelectItem value="pending">قيد الانتظار</SelectItem>
                       <SelectItem value="departed">غادرت</SelectItem>
                       <SelectItem value="arrived">وصلت</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-right block" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-right block">نوع الشحن</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger dir="rtl">
+                        <SelectValue placeholder="اختر نوع الشحن" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent dir="rtl">
+                      <SelectItem value="AIR">جوي (Air)</SelectItem>
+                      <SelectItem value="SEA">بحري (Sea)</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage className="text-right block" />

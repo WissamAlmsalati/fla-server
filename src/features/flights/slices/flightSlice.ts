@@ -7,6 +7,7 @@ export interface Flight {
     departureDate: string | null;
     arrivalDate: string | null;
     country: string;
+    type?: "AIR" | "SEA";
     createdAt: string;
     updatedAt: string;
     orders?: any[];

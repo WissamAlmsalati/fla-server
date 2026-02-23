@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useReactToPrint } from "react-to-print";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Printer, Users, Package, Calendar } from "lucide-react";
+import { ArrowLeft, ArrowRight, Printer, Users, Package, Calendar, Plane, Ship } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -120,7 +120,13 @@ export default function FlightReportPage() {
             </div>
           </div>
           <div className="text-left">
-            <Badge variant="outline" className="text-lg px-4 py-1.5 mb-2">{flight.country}</Badge>
+            <div className="flex justify-end gap-2 mb-2">
+              <Badge variant="outline" className={`text-lg px-4 py-1.5 ${flight.type === 'SEA' ? 'bg-cyan-50 text-cyan-700' : 'bg-indigo-50 text-indigo-700'}`}>
+                {flight.type === 'SEA' ? <Ship className="h-4 w-4 ml-2" /> : <Plane className="h-4 w-4 ml-2" />}
+                {flight.type === 'SEA' ? 'شحن بحري' : 'شحن جوي'}
+              </Badge>
+              <Badge variant="outline" className="text-lg px-4 py-1.5">{flight.country}</Badge>
+            </div>
             <p className="text-sm font-medium">حالة الشحنة: {flight.status === 'pending' ? 'قيد الانتظار' : flight.status === 'departed' ? 'غادرت' : 'وصلت'}</p>
           </div>
         </div>

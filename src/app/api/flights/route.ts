@@ -17,6 +17,7 @@ const createFlightSchema = z.object({
     departureDate: z.string().optional().nullable(),
     arrivalDate: z.string().optional().nullable(),
     country: z.string().optional().default("CHINA"),
+    type: z.enum(["AIR", "SEA"]).optional().default("AIR"),
 });
 
 export async function GET(request: Request) {
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
             flightNumber: payload.flightNumber,
             status: payload.status,
             country: payload.country,
+            type: payload.type as "AIR" | "SEA",
             departureDate: payload.departureDate ? new Date(payload.departureDate) : null,
             arrivalDate: payload.arrivalDate ? new Date(payload.arrivalDate) : null,
         };
