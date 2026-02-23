@@ -125,13 +125,9 @@ export async function PATCH(
         const currentStatusIndex = STATUS_ORDER.indexOf(order.status);
         const newStatusIndex = data.status ? STATUS_ORDER.indexOf(data.status) : currentStatusIndex;
 
-        // Prevent skipping forward - can only move to next status or stay at current
-        if (newStatusIndex > currentStatusIndex + 1) {
-          throw new Error(`لا يمكن تجاوز الحالات. يجب إكمال الحالة الحالية "${order.status}" أولاً`);
-        }
-
-        // Allow going backwards for corrections (except after certain points)
-        if (newStatusIndex < currentStatusIndex) {
+        // Allow going backwards and forwards freely for Admins/Warehouses (restricted by Role above)
+        if (newStatusIndex !== currentStatusIndex) {
+          // Status changes are permitted
           // Allow going back, but maybe add some restrictions later if needed
         }
       }
