@@ -8,8 +8,8 @@ import { toast } from 'sonner';
  * Specs: 4 inch (108mm) width, 203 dpi
  * Label dimensions: 100mm x 150mm (common 4x6 inch shipping label)
  *
- * Uses direct jsPDF vector rendering for crisp output.
- * Opens in a new browser tab for preview / print.
+ * Uses direct jsPDF vector rendering for crisp output, and 
+ * native Canvas shaping for Arabic text fields.
  */
 export const generateStickerLabel = async (order: Order) => {
   try {
@@ -78,6 +78,62 @@ export const generateStickerLabel = async (order: Order) => {
       pdf.setDrawColor(...BLACK);
       pdf.setLineWidth(thickness);
       pdf.line(0, yPos, W, yPos);
+    };
+
+    // helper: draw text as image (fixes Arabic shaping in jsPDF)
+    const addArabicNativeText = (
+      text: string,
+      x: number,
+      y: number,
+      fontSizePt: number,
+      isBold: boolean
+    ) => {
+      if (!text) return;
+      const scale = 5; // internal upscaling for crispness
+      const ptToPx = 1.3333;
+      const fontSizePx = fontSizePt * ptToPx;
+      const scaledFontSize = fontSizePx * scale;
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const fontFamily = '"Segoe UI", "Cairo", "Tajawal", "Arial", sans-serif';
+      const fontStr = `${isBold ? 'bold' : 'normal'} ${scaledFontSize}px ${fontFamily}`;
+      ctx.font = fontStr;
+
+      const metrics = ctx.measureText(text);
+      const textWidth = Math.max(metrics.width, 1);
+      const textHeight = scaledFontSize * 1.5;
+
+      canvas.width = textWidth + (4 * scale);
+      canvas.height = textHeight + (4 * scale);
+
+      ctx.font = fontStr;
+      ctx.fillStyle = '#000000';
+      ctx.textBaseline = 'top';
+
+      const hasArabic = /[\u0600-\u06FF]/.test(text);
+      if (hasArabic) {
+        ctx.direction = 'rtl';
+        ctx.textAlign = 'right';
+        ctx.fillText(text, canvas.width - (2 * scale), 2 * scale);
+      } else {
+        ctx.direction = 'ltr';
+        ctx.textAlign = 'left';
+        ctx.fillText(text, 2 * scale, 2 * scale);
+      }
+
+      const dataUrl = canvas.toDataURL('image/png');
+      const pxToMm = 25.4 / 96;
+      const wMm = (canvas.width / scale) * pxToMm;
+      const hMm = (canvas.height / scale) * pxToMm;
+
+      // Approximate jsPDF baseline shift
+      const ascentMm = fontSizePt * 0.3527 * 0.8;
+      const adjustedY = y - ascentMm - (2 * pxToMm);
+
+      pdf.addImage(dataUrl, 'PNG', x, adjustedY, wMm, hMm);
     };
 
     // ── 1. OUTER BORDER ───────────────────────────────────────
@@ -238,13 +294,10 @@ export const generateStickerLabel = async (order: Order) => {
     pdf.setTextColor(...MID_GRAY);
     pdf.text('CONTENTS', M, y + 4);
 
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
-    pdf.setTextColor(...BLACK);
     // Truncate long names
     const maxLen = 45;
     const truncatedName = itemName.length > maxLen ? itemName.substring(0, maxLen) + '...' : itemName;
-    pdf.text(truncatedName, M, y + 9);
+    addArabicNativeText(truncatedName, M, y + 9, 9, true);
 
     y += descH;
     hRule(y, 0.6);
@@ -259,10 +312,7 @@ export const generateStickerLabel = async (order: Order) => {
     pdf.setTextColor(...MID_GRAY);
     pdf.text('CONSIGNEE', M, y + 4);
 
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(12);
-    pdf.setTextColor(...BLACK);
-    pdf.text(customerName, M, y + 10);
+    addArabicNativeText(customerName, M, y + 10, 12, true);
 
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(7);
@@ -289,8 +339,22 @@ export const generateStickerLabel = async (order: Order) => {
     y += orderBarH;
 
     // ── 9. BARCODE ────────────────────────────────────────────
+    const sanitizeBarcodeValue = (str: string) => {
+      if (!str) return 'UNKNOWN';
+      const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+      let sanitized = str;
+      for (let i = 0; i < 10; i++) {
+        sanitized = sanitized.replace(new RegExp(arabicNumbers[i], 'g'), i.toString());
+      }
+      // Remove any remaining non-ASCII characters since CODE128 only supports ASCII
+      sanitized = sanitized.replace(/[^\x00-\x7F]/g, '');
+      return sanitized || 'UNKNOWN';
+    };
+
+    const safeTrackingNumber = sanitizeBarcodeValue(order.trackingNumber);
+
     const barcodeCanvas = document.createElement('canvas');
-    JsBarcode(barcodeCanvas, order.trackingNumber, {
+    JsBarcode(barcodeCanvas, safeTrackingNumber, {
       format: 'CODE128',
       width: 2.5,
       height: 60,

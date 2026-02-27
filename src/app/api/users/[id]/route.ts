@@ -54,6 +54,8 @@ export async function GET(
         photoUrl: true,
         passportUrl: true,
         suspended: true,
+        fcmTokens: true,
+        location: true,
         createdAt: true,
         customer: {
           select: {

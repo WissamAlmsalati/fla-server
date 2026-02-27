@@ -125,10 +125,9 @@ export async function PATCH(
         const currentStatusIndex = STATUS_ORDER.indexOf(order.status);
         const newStatusIndex = data.status ? STATUS_ORDER.indexOf(data.status) : currentStatusIndex;
 
-        // Allow going backwards and forwards freely for Admins/Warehouses (restricted by Role above)
-        if (newStatusIndex !== currentStatusIndex) {
-          // Status changes are permitted
-          // Allow going back, but maybe add some restrictions later if needed
+        // Prevent going backward in status
+        if (newStatusIndex !== -1 && currentStatusIndex !== -1 && newStatusIndex < currentStatusIndex) {
+          throw new Error("لا يمكن إرجاع حالة الطلب إلى حالة سابقة");
         }
       }
 
@@ -179,7 +178,7 @@ export async function PATCH(
               });
 
               // Create transaction record
-              await tx.transaction.create({
+              const withdrawalTransaction = await tx.transaction.create({
                 data: {
                   customerId: order.customerId,
                   type: "WITHDRAWAL",
@@ -191,6 +190,40 @@ export async function PATCH(
                   createdBy: user.sub,
                 },
               });
+
+              // Send wallet deduction notification for shipping
+              const customerUser = await tx.user.findUnique({
+                where: { id: customer.userId as number }
+              });
+
+              if (customerUser) {
+                const isRefund = costDifference < 0; // If they overpaid previously (rare)
+                const actionAr = isRefund ? "إيداع" : "سحب";
+                const title = `إشعار ${actionAr} مالي (شحن طلب)`;
+                const notifBody = `تم ${actionAr} مبلغ ${Math.abs(costDifference)}$ من محفظتك كقيمة شحن للطلب "${order.name}". الرصيد الحالي: ${balanceAfter}$`;
+
+                const dbNotification = await tx.notification.create({
+                  data: {
+                    title,
+                    body: notifBody,
+                    userId: customerUser.id as number,
+                    type: "WALLET_UPDATE",
+                  }
+                });
+
+                if (customerUser.fcmTokens && customerUser.fcmTokens.length > 0) {
+                  await sendNotificationToUser(
+                    customerUser.fcmTokens,
+                    title,
+                    notifBody,
+                    {
+                      type: "wallet_update",
+                      transactionId: String(withdrawalTransaction.id),
+                      notificationId: String(dbNotification.id)
+                    }
+                  );
+                }
+              }
             }
           }
         }
@@ -242,17 +275,34 @@ export async function PATCH(
     });
 
     const orderWithCustomer = updatedOrder as any;
-    if (data.status && data.status !== order.status && orderWithCustomer.customer?.user?.fcmTokens?.length) {
+    if (data.status && data.status !== order.status && orderWithCustomer.customer?.user) {
       const statusLabel = getStatusLabel(data.status, updatedOrder.country);
-      await sendNotificationToUser(
-        orderWithCustomer.customer.user.fcmTokens,
-        "تحديث حالة الطلب",
-        `تم تغيير حالة الطلب ${updatedOrder.trackingNumber} إلى ${statusLabel}`,
-        {
-          orderId: updatedOrder.id.toString(),
-          type: "status_update"
+      const title = "تحديث حالة الطلب";
+      const body = `تم تغيير حالة الطلب ${updatedOrder.trackingNumber} إلى ${statusLabel}`;
+
+      // 1. Create DB Notification
+      const dbNotification = await prisma.notification.create({
+        data: {
+          title,
+          body,
+          userId: orderWithCustomer.customer.user.id,
+          type: "ORDER_UPDATE",
         }
-      );
+      });
+
+      // 2. Send Push Notification if tokens exist
+      if (orderWithCustomer.customer.user.fcmTokens?.length) {
+        await sendNotificationToUser(
+          orderWithCustomer.customer.user.fcmTokens,
+          title,
+          body,
+          {
+            orderId: updatedOrder.id.toString(),
+            type: "status_update",
+            notificationId: String(dbNotification.id)
+          }
+        );
+      }
     }
 
     return NextResponse.json(updatedOrder);

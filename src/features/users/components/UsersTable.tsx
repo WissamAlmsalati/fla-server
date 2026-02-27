@@ -6,7 +6,7 @@ import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
 import { fetchUsers, deleteUser, User } from "../slices/userSlice";
 import { EditUserDialog } from "./EditUserDialog";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Bell, BellOff } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table,
@@ -43,6 +43,7 @@ const exportUsers = (users: User[]) => {
     name: "الاسم",
     email: "البريد الإلكتروني",
     mobile: "رقم الهاتف",
+    location: "المكان",
     "customer.code": "كود الشحن",
     role: "الدور",
     createdAt: "تاريخ التسجيل"
@@ -108,8 +109,10 @@ export function UsersTable({ filters }: UsersTableProps) {
             <TableHead className="text-right">الاسم</TableHead>
             <TableHead className="text-right">البريد الإلكتروني</TableHead>
             <TableHead className="text-right">رقم الهاتف</TableHead>
+            <TableHead className="text-right">المكان</TableHead>
             <TableHead className="text-right">كود الشحن</TableHead>
             <TableHead className="text-right">الدور</TableHead>
+            <TableHead className="text-right">الإشعارات</TableHead>
             <TableHead className="text-right">الحالة</TableHead>
             <TableHead className="text-right">تاريخ التسجيل</TableHead>
             <TableHead className="text-right">إجراءات</TableHead>
@@ -125,6 +128,7 @@ export function UsersTable({ filters }: UsersTableProps) {
               <TableCell className="font-medium">{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>{user.mobile || "-"}</TableCell>
+              <TableCell>{user.location || "-"}</TableCell>
               <TableCell>
                 {user.role === "CUSTOMER" && user.customer?.code ? (
                   <Badge variant="outline" className="font-mono">
@@ -138,6 +142,17 @@ export function UsersTable({ filters }: UsersTableProps) {
                 <Badge variant={roleColorMap[user.role] || "outline"}>
                   {roleMap[user.role] || user.role}
                 </Badge>
+              </TableCell>
+              <TableCell>
+                {user.fcmTokens && user.fcmTokens.length > 0 ? (
+                  <span title={`لديه ${user.fcmTokens.length} توكن (Token): \n${user.fcmTokens.join('\n')}`}>
+                    <Bell className="h-4 w-4 text-green-500" />
+                  </span>
+                ) : (
+                  <span title="لا يوجد توكن إشعارات">
+                    <BellOff className="h-4 w-4 text-muted-foreground opacity-50" />
+                  </span>
+                )}
               </TableCell>
               <TableCell>
                 {user.suspended ? (
@@ -166,7 +181,7 @@ export function UsersTable({ filters }: UsersTableProps) {
           ))}
           {users.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="text-center h-24">
+              <TableCell colSpan={8} className="text-center h-24">
                 لا يوجد مستخدمين
               </TableCell>
             </TableRow>

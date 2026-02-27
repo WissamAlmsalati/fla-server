@@ -13,7 +13,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const payload = loginSchema.parse(body);
-    const user = await prisma.user.findUnique({ where: { email: payload.email } });
+    const user = await prisma.user.findUnique({
+      where: { email: payload.email },
+      include: { customer: true }
+    });
     if (!user || payload.password !== user.passwordHash) {
       return NextResponse.json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" }, { status: 401 });
     }
@@ -29,16 +32,26 @@ export async function POST(request: Request) {
     }
 
     // Add FCM token if not exists
-    if (payload.fcmToken && !user.fcmTokens?.includes(payload.fcmToken)) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          fcmTokens: {
-            push: payload.fcmToken
+    if (payload.fcmToken) {
+      console.log(`[LOGIN TRACE] Received FCM token in login payload for user ${user.id}:`, payload.fcmToken);
+      if (!user.fcmTokens?.includes(payload.fcmToken)) {
+        console.log(`[LOGIN TRACE] Saving NEW FCM token to user ${user.id} database.`);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            fcmTokens: {
+              push: payload.fcmToken
+            }
           }
-        }
-      });
+        });
+      } else {
+        console.log(`[LOGIN TRACE] FCM token already exists for user ${user.id}.`);
+      }
+    } else {
+      console.log(`[LOGIN TRACE] NO FCM token provided in login payload for user ${user.id}.`);
     }
+
+    console.log(`[LOGIN TRACE] User ${user.id} currently has ${user.fcmTokens?.length || 0} FCM tokens saved in DB.`);
     const accessToken = signAccessToken({
       sub: user.id,
       role: user.role,
@@ -64,7 +77,13 @@ export async function POST(request: Request) {
         name: user.name,
         email: user.email,
         role: user.role,
-        customerId: user.customerId
+        customerId: user.customerId,
+        code: user.customer?.code,
+        dubaiCode: user.customer?.dubaiCode,
+        usaCode: user.customer?.usaCode,
+        turkeyCode: user.customer?.turkeyCode,
+        hasFcmToken: user.fcmTokens && user.fcmTokens.length > 0,
+        fcmTokens: user.fcmTokens
       }
     });
     response.cookies.set("access_token", accessToken, {

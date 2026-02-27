@@ -22,8 +22,10 @@ model User {
   createdAt    DateTime       @default(now())
   approved     Boolean        @default(true)
   fcmTokens    String[]       @default([])
+  location     String?
   customer     Customer?
   messages     OrderMessage[]
+  notifications Notification[]
 }
 
 model Customer {
@@ -179,8 +181,22 @@ model PendingRegistration {
   passwordHash String
   mobile       String   @unique
   otp          String
+  fcmToken     String?
+  location     String?
   expiresAt    DateTime
   createdAt    DateTime @default(now())
+}
+
+model Notification {
+  id           Int      @id @default(autoincrement())
+  userId       Int?     // If null, it's a global notification for everyone
+  title        String
+  body         String
+  type         String   @default("SYSTEM") // e.g., ORDER_UPDATE, SYSTEM
+  read         Boolean  @default(false)
+  firebaseSent Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  user         User?    @relation(fields: [userId], references: [id])
 }
 
 enum Role {
@@ -223,4 +239,12 @@ enum Currency {
   USD
   LYD
   CNY
+}
+
+model PasswordResetCode {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }

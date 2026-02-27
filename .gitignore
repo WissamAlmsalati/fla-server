@@ -41,3 +41,5 @@ yarn-error.log*
 next-env.d.ts
 
 certificates
+service-account.json
+FLL System Firebase Admin SDK.json

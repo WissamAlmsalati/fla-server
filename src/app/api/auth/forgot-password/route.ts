@@ -3,60 +3,40 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 
-const registerSchema = z.object({
-    name: z.string().min(2),
+const forgotPasswordSchema = z.object({
     email: z.string().email(),
-    password: z.string().min(6),
-    mobile: z.string().min(10),
-    location: z.string().optional(),
-    fcmToken: z.string().optional().describe("Firebase Cloud Messaging token for push notifications"),
 });
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const payload = registerSchema.parse(body);
+        const payload = forgotPasswordSchema.parse(body);
 
-        // Check if user already exists
-        const existingUser = await prisma.user.findFirst({
-            where: {
-                OR: [
-                    { email: payload.email },
-                    { mobile: payload.mobile },
-                ],
-            },
+        const user = await prisma.user.findUnique({
+            where: { email: payload.email },
         });
 
-        if (existingUser) {
+        if (!user) {
             return NextResponse.json(
-                { error: "User with this email or mobile already exists" },
-                { status: 400 }
+                { error: "البريد الإلكتروني غير مسجل في النظام" },
+                { status: 404 }
             );
         }
 
-        // Generate OTP
+        // Generate 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-        // Clean up any existing pending registration for this email/mobile
-        await prisma.pendingRegistration.deleteMany({
-            where: {
-                OR: [
-                    { email: payload.email },
-                    { mobile: payload.mobile },
-                ],
-            },
+        // Delete any existing reset codes for this email
+        await prisma.passwordResetCode.deleteMany({
+            where: { email: payload.email },
         });
 
-        await prisma.pendingRegistration.create({
+        // Save new reset code
+        await prisma.passwordResetCode.create({
             data: {
-                name: payload.name,
                 email: payload.email,
-                passwordHash: payload.password, // Storing as is, matching existing system
-                mobile: payload.mobile,
-                location: payload.location,
-                otp,
-                fcmToken: payload.fcmToken,
+                code: otp,
                 expiresAt,
             },
         });
@@ -64,7 +44,7 @@ export async function POST(request: Request) {
         // Send OTP via Email
         await sendEmail({
             to: payload.email,
-            subject: "Your OTP for Registration",
+            subject: "Password Reset Request",
             html: `
                 <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl; text-align: right; background-color: #f6f6f6; padding: 40px 20px;">
                     <div style="background-color: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
@@ -78,9 +58,9 @@ export async function POST(request: Request) {
                         
                         <!-- Main Content -->
                         <div style="color: #020617;">
-                            <h2 style="font-size: 22px; font-weight: 600; margin-bottom: 20px;">مرحباً ${payload.name}،</h2>
+                            <h2 style="font-size: 22px; font-weight: 600; margin-bottom: 20px;">طلب استعادة كلمة المرور</h2>
                             <p style="font-size: 16px; line-height: 1.6; color: #334155; margin-bottom: 30px;">
-                                شكراً لتسجيلك في نظام الولاء الدائم. لإكمال عملية التسجيل، يرجى استخدام رمز التحقق التالي:
+                                لقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك في نظام الولاء الدائم. يرجى استخدام رمز التحقق التالي:
                             </p>
                             
                             <!-- OTP Box -->
@@ -90,9 +70,15 @@ export async function POST(request: Request) {
                                 </h1>
                             </div>
                             
-                            <p style="font-size: 15px; color: #64748b; margin-bottom: 0;">
-                                هذا الرمز صالح لمدة <strong style="color: #4AC1C2;">10 دقائق</strong>. يرجى إدخاله في التطبيق للبدء.
+                            <p style="font-size: 15px; color: #64748b; margin-bottom: 15px;">
+                                هذا الرمز صالح لمدة <strong style="color: #4AC1C2;">15 دقيقة</strong>.
                             </p>
+
+                            <div style="background-color: #f8fafc; border-right: 4px solid #cbd5e1; padding: 15px; margin-top: 30px;">
+                                <p style="font-size: 14px; color: #64748b; margin: 0;">
+                                    إذا لم تقم بطلب إعادة تعيين كلمة المرور، يرجى تجاهل هذه الرسالة. لن يتم إجراء أي تغيير على حسابك.
+                                </p>
+                            </div>
                         </div>
                         
                         <!-- Footer -->
@@ -109,15 +95,15 @@ export async function POST(request: Request) {
         });
 
         console.log("\n\n=======================================================");
-        console.log("🔐🔐🔐 NEW OTP GENERATED 🔐🔐🔐");
+        console.log("🔐🔐🔐 PASSWORD RESET OTP GENERATED 🔐🔐🔐");
         console.log(`👉 EMAIL: ${payload.email}`);
         console.log(`👉 OTP:   ${otp}`);
         console.log("=======================================================\n\n");
 
-        return NextResponse.json({ message: "OTP sent successfully" });
+        return NextResponse.json({ message: "تم إرسال رمز إعادة التعيين إلى بريدك الإلكتروني" });
     } catch (error) {
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Invalid request" },
+            { error: error instanceof Error ? error.message : "طلب غير صالح" },
             { status: 400 }
         );
     }

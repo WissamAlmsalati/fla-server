@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
             arrived_to_china: "وصل إلى المخزن",
             shipping_to_libya: "قيد الشحن لليبيا",
             arrived_libya: "وصل إلى ليبيا",
-            ready_for_pickup: "جاهز للاستلام",
+            ready_for_pickup: "جاهز للتسليم",
             delivered: "تم التسليم",
             canceled: "ملغي",
         };

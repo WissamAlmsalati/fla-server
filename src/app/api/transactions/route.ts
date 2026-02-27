@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
+import { sendNotificationToUser } from "@/lib/notifications";
 
 // POST /api/transactions - Create a new transaction
 export async function POST(request: NextRequest) {
@@ -106,6 +107,52 @@ export async function POST(request: NextRequest) {
 
             return newTransaction;
         });
+
+        // --- Send Notification ---
+        try {
+            const customerUser = await prisma.customer.findUnique({
+                where: { id: customerId },
+                include: { user: true }
+            });
+
+            if (customerUser?.user) {
+                const actionAr = type === "DEPOSIT" ? "إيداع" : "سحب";
+                const title = `إشعار ${actionAr} مالي`;
+
+                // Format the currency symbol
+                let currencySymbol = currency;
+                if (currency === "USD") currencySymbol = "$";
+                if (currency === "LYD") currencySymbol = "د.ل";
+                if (currency === "CNY") currencySymbol = "¥";
+
+                const notifBody = `تم ${actionAr} مبلغ ${amount}${currencySymbol} في محفظتك. الرصيد الحالي: ${balanceAfter}${currencySymbol}`;
+
+                const dbNotification = await prisma.notification.create({
+                    data: {
+                        title: title,
+                        body: notifBody,
+                        userId: customerUser.user.id,
+                        type: "WALLET_UPDATE"
+                    }
+                });
+
+                if (customerUser.user.fcmTokens && customerUser.user.fcmTokens.length > 0) {
+                    await sendNotificationToUser(
+                        customerUser.user.fcmTokens,
+                        title,
+                        notifBody,
+                        {
+                            type: "wallet_update",
+                            transactionId: String(transactionResult.id),
+                            notificationId: String(dbNotification.id)
+                        }
+                    );
+                }
+            }
+        } catch (notifErr) {
+            console.error("Failed to send transaction notification:", notifErr);
+            // Non-blocking error
+        }
 
         return NextResponse.json(transactionResult, { status: 201 });
     } catch (error) {

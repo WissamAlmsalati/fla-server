@@ -7,36 +7,45 @@ export async function sendNotificationToUser(
     data?: Record<string, string>
 ) {
     if (!firebaseAdmin || fcmTokens.length === 0) {
-        return;
+        console.log(`[MOCK NOTIFICATION] To ${fcmTokens.length} tokens. Title: ${title}`);
+        return { simulated: true, success: true, message: "Firebase not initialized or no tokens. Simulated push." };
     }
 
     try {
-        const message = {
-            notification: {
-                title,
-                body,
-            },
-            data,
-            tokens: fcmTokens,
-        };
+        // Temporary workaround for Next.js fetch concurrency bug dropping Authorization headers
+        const responses = [];
+        let successCount = 0;
+        let failureCount = 0;
 
-        const response = await firebaseAdmin.messaging().sendEachForMulticast(message);
-
-        // Check for invalid tokens to potentially remove them from DB
-        const failedTokens: string[] = [];
-        if (response.failureCount > 0) {
-            response.responses.forEach((resp, idx) => {
-                if (!resp.success) {
-                    // If the token is invalid or not registered, we should probably remove it later,
-                    // but for now we just log it.
-                    console.warn(`Failed to send notification to token ${fcmTokens[idx]}:`, resp.error);
-                }
-            });
+        for (const token of fcmTokens) {
+            try {
+                const singleMessage = {
+                    notification: {
+                        title,
+                        body,
+                    },
+                    data,
+                    token,
+                };
+                const messageId = await firebaseAdmin.messaging().send(singleMessage);
+                responses.push({ success: true, messageId });
+                successCount++;
+            } catch (err: any) {
+                responses.push({ success: false, error: err });
+                failureCount++;
+                console.warn(`Failed to send notification to token ${token}:`, err.message || err);
+            }
         }
 
-        return response;
-    } catch (error) {
+        const response = {
+            responses,
+            successCount,
+            failureCount,
+        };
+
+        return { simulated: false, success: true, response };
+    } catch (error: any) {
         console.error('Error sending notification:', error);
-        return null;
+        return { simulated: false, success: false, error: error.message };
     }
 }

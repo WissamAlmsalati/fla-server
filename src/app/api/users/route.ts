@@ -71,6 +71,7 @@ export async function GET(request: Request) {
         passportUrl: true,
         suspended: true,
         createdAt: true,
+        fcmTokens: true,
         customer: {
           select: {
             code: true

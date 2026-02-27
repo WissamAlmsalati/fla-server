@@ -9,7 +9,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import Image from "next/image";
-import { ArrowRight, Pencil, Trash2, Package, User as UserIcon, Mail, Phone, Shield, Calendar, Box, FileText, Image as ImageIcon, Wallet, TrendingUp, DollarSign, UserX, UserCheck, Copy, Check } from "lucide-react";
+import { ArrowRight, Pencil, Trash2, Package, User as UserIcon, Mail, Phone, Shield, Calendar, Box, FileText, Image as ImageIcon, Wallet, TrendingUp, DollarSign, UserX, UserCheck, Copy, Check, Bell, MapPin } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { EditUserDialog } from "./EditUserDialog";
 import { ManageWalletDialog } from "@/features/customers/components/ManageWalletDialog";
 import { ManageShipmentCodesDialog } from "@/features/customers/components/ManageShipmentCodesDialog";
@@ -40,6 +48,9 @@ export function UserDetail({ userId }: UserDetailProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifTotal, setNotifTotal] = useState(0);
 
   const handleCopyCode = async (code: string, label: string) => {
     try {
@@ -76,7 +87,27 @@ export function UserDetail({ userId }: UserDetailProps) {
 
   useEffect(() => {
     fetchUser();
+    fetchNotifications();
   }, [userId]);
+
+  const fetchNotifications = async () => {
+    setNotifLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/notifications/user/${userId}?limit=50`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+        setNotifTotal(data.total || 0);
+      }
+    } catch (e) {
+      console.error("Failed to fetch user notifications", e);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (confirm("هل أنت متأكد من حذف هذا المستخدم؟ لا يمكن التراجع عن هذا الإجراء.")) {
@@ -212,6 +243,13 @@ export function UserDetail({ userId }: UserDetailProps) {
                 </TabsTrigger>
               </>
             )}
+            <TabsTrigger 
+              value="notifications" 
+              className="rounded-md px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+            >
+              <Bell className="h-4 w-4 mr-2" />
+              الإشعارات
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -417,6 +455,20 @@ export function UserDetail({ userId }: UserDetailProps) {
 
                     <div className="space-y-1">
                       <span className="text-sm text-muted-foreground flex items-center gap-2">
+                        <MapPin className="h-3 w-3" /> المكان
+                      </span>
+                      <div className="font-medium">{user.location || "-"}</div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-sm text-muted-foreground flex items-center gap-2">
+                        <MapPin className="h-3 w-3" /> المكان
+                      </span>
+                      <div className="font-medium">{user.location || "-"}</div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-sm text-muted-foreground flex items-center gap-2">
                         <Shield className="h-3 w-3" /> الدور
                       </span>
                       <div>
@@ -430,6 +482,37 @@ export function UserDetail({ userId }: UserDetailProps) {
                       </span>
                       <div className="font-medium">
                         {format(new Date(user.createdAt), "dd MMMM yyyy", { locale: ar })}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 col-span-1 md:col-span-2">
+                      <span className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Phone className="h-3 w-3" /> رموز الإشعارات (FCM Tokens)
+                      </span>
+                      <div className="font-medium font-mono text-sm break-all bg-muted/50 p-2 rounded-md border border-dashed">
+                        {user.fcmTokens && user.fcmTokens.length > 0 ? (
+                           <div className="flex flex-col gap-2">
+                             {user.fcmTokens.map((token, index) => (
+                               <div key={index} className="flex items-center justify-between gap-2 p-2 bg-white rounded border relative group">
+                                 <span className="truncate flex-1 max-w-[200px] sm:max-w-[300px] md:max-w-full text-xs" title={token}>{token}</span>
+                                 <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                  onClick={() => handleCopyCode(token, `FCM ${index + 1}`)}
+                                >
+                                  {copiedCode === token ? (
+                                    <Check className="h-3 w-3 text-green-500" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </Button>
+                               </div>
+                             ))}
+                           </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">لا يوجد رموز مسجلة</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -540,6 +623,69 @@ export function UserDetail({ userId }: UserDetailProps) {
             </TabsContent>
           </>
         )}
+        {/* Notifications Tab */}
+        <TabsContent value="notifications" className="mt-6 data-[state=inactive]:hidden" forceMount>
+          <Card className="shadow-none">
+            <CardHeader className="border-b">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Bell className="h-5 w-5 text-primary" />
+                سجل الإشعارات ({notifTotal})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="rounded-md border mt-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">العنوان</TableHead>
+                      <TableHead className="text-right">النص</TableHead>
+                      <TableHead className="text-right">النوع</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-right">التاريخ</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {notifLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">جاري التحميل...</TableCell>
+                      </TableRow>
+                    ) : notifications.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center h-24">
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                            <Bell className="h-10 w-10 opacity-20" />
+                            <p>لا توجد إشعارات لهذا المستخدم</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      notifications.map((notif) => (
+                        <TableRow key={notif.id}>
+                          <TableCell className="font-medium">{notif.title}</TableCell>
+                          <TableCell className="max-w-xs truncate text-muted-foreground">{notif.body}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{notif.type}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {notif.read ? (
+                              <Badge variant="secondary">مقروءة</Badge>
+                            ) : (
+                              <Badge className="bg-blue-500 hover:bg-blue-600">جديدة</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {format(new Date(notif.createdAt), "dd MMM yyyy, HH:mm", { locale: ar })}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
     </div>
   );

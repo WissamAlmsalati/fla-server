@@ -8,6 +8,7 @@ import {
   Users,
   Settings,
   MessageSquare,
+  Bell,
   LifeBuoy,
   Search,
   Command,
@@ -18,6 +19,7 @@ import {
 import Image from "next/image"
 import { useRouter } from "next/navigation";
 import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
+import { NotificationBell } from "@/components/layout/NotificationBell"
 
 import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
@@ -118,6 +120,11 @@ const data = {
       url: "/announcements",
       icon: MessageSquare,
     },
+    {
+      name: "الإشعارات",
+      url: "/admin/notifications",
+      icon: Bell,
+    },
   ],
 
 }
@@ -165,16 +172,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              <a href="#" className="flex items-center gap-2">
-                <Image
-                  src="/photos/logo-without-bg.png"
-                  alt="Logo"
-                  width={24}
-                  height={24}
-                  className="object-contain"
-                />
-                <span className="text-base font-semibold">شركة الولاء الدائم</span>
-              </a>
+              <div className="flex w-full items-center justify-between">
+                <a href="#" className="flex items-center gap-2">
+                  <Image
+                    src="/photos/logo-without-bg.png"
+                    alt="Logo"
+                    width={24}
+                    height={24}
+                    className="object-contain"
+                  />
+                  <span className="text-base font-semibold">شركة الولاء الدائم</span>
+                </a>
+                <NotificationBell />
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

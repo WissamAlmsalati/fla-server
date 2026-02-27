@@ -7,11 +7,13 @@ export type User = {
   name: string;
   email: string;
   mobile?: string;
+  location?: string;
   photoUrl?: string;
   passportUrl?: string;
   role: Role;
   suspended: boolean;
   createdAt: string;
+  fcmTokens?: string[];
   customer?: {
     id: number;
     code: string;

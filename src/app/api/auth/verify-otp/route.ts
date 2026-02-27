@@ -40,9 +40,10 @@ export async function POST(request: Request) {
                 email: pendingUser.email,
                 passwordHash: pendingUser.passwordHash,
                 mobile: pendingUser.mobile,
+                location: pendingUser.location,
                 role: "CUSTOMER",
                 approved: false, // Requires admin approval
-                ...(payload.fcmToken ? { fcmTokens: [payload.fcmToken] } : {}),
+                ...(pendingUser.fcmToken || payload.fcmToken ? { fcmTokens: [pendingUser.fcmToken || payload.fcmToken as string] } : {}),
             },
         });
 

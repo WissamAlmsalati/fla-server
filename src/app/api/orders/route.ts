@@ -5,6 +5,7 @@ import { parsePaginationMeta } from "@/lib/pagination";
 import { requireAuth } from "@/lib/auth";
 import { requireRole } from "@/lib/rbac";
 import { Prisma } from "@prisma/client";
+import { sendNotificationToUser } from "@/lib/notifications";
 
 export async function GET(request: NextRequest) {
   try {
@@ -192,7 +193,7 @@ export async function POST(request: Request) {
       // If a price is provided, deduct from customer balance and create transaction
       if (body.usd_price && body.usd_price > 0 && body.customer_id) {
         const customer = await tx.customer.findUnique({
-          where: { id: body.customer_id }
+          where: { id: body.customer_id! }
         });
 
         if (customer) {
@@ -200,13 +201,13 @@ export async function POST(request: Request) {
           const balanceAfter = balanceBefore - body.usd_price;
 
           await tx.customer.update({
-            where: { id: body.customer_id },
+            where: { id: body.customer_id! },
             data: { balanceUSD: balanceAfter }
           });
 
-          await tx.transaction.create({
+          const withdrawalTransaction = await tx.transaction.create({
             data: {
-              customerId: body.customer_id,
+              customerId: body.customer_id!,
               type: "WITHDRAWAL",
               amount: body.usd_price,
               currency: "USD",
@@ -216,11 +217,80 @@ export async function POST(request: Request) {
               createdBy: user.sub,
             }
           });
+
+          // Send wallet deduction notification
+          const customerUser = await tx.user.findUnique({
+            where: { id: customer.userId as number }
+          });
+
+          if (customerUser) {
+            const title = "إشعار سحب مالي (طلب جديد)";
+            const notifBody = `تم سحب مبلغ ${body.usd_price}$ من محفظتك لشراء الطلب "${newOrder.name}". الرصيد الحالي: ${balanceAfter}$`;
+
+            const dbNotification = await tx.notification.create({
+              data: {
+                title,
+                body: notifBody,
+                userId: customerUser.id as number,
+                type: "WALLET_UPDATE",
+              }
+            });
+
+            if (customerUser.fcmTokens && customerUser.fcmTokens.length > 0) {
+              await sendNotificationToUser(
+                customerUser.fcmTokens,
+                title,
+                notifBody,
+                {
+                  type: "wallet_update",
+                  transactionId: String(withdrawalTransaction.id),
+                  notificationId: String(dbNotification.id)
+                }
+              );
+            }
+          }
         }
       }
 
       return newOrder;
     });
+
+    // Send notification to customer (fire-and-forget)
+    if (body.customer_id) {
+      const customerUser = await prisma.customer.findUnique({
+        where: { id: body.customer_id! },
+        include: { user: true },
+      });
+
+      if (customerUser?.user) {
+        const title = "تم إضافة طلب جديد";
+        const notifBody = `تمت إضافة الطلب "${order.name}" (${order.trackingNumber}) إلى حسابك بنجاح.`;
+
+        // Save to DB
+        const dbNotification = await prisma.notification.create({
+          data: {
+            title,
+            body: notifBody,
+            userId: customerUser.user.id,
+            type: "ORDER_UPDATE",
+          },
+        });
+
+        // Push notification if FCM tokens exist
+        if (customerUser.user.fcmTokens?.length) {
+          await sendNotificationToUser(
+            customerUser.user.fcmTokens,
+            title,
+            notifBody,
+            {
+              orderId: order.id.toString(),
+              type: "new_order",
+              notificationId: String(dbNotification.id),
+            }
+          );
+        }
+      }
+    }
 
     return NextResponse.json({ data: order }, { status: 201 });
   } catch (error) {

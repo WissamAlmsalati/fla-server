@@ -6,10 +6,13 @@ const PUBLIC_PATHS = [
   "/api/auth/login",
   "/api/auth/refresh",
   "/api/auth/register",
-  "/api/auth/verify-otp"
+  "/api/auth/verify-otp",
+  "/api/auth/forgot-password",
+  "/api/auth/verify-reset-otp",
+  "/api/auth/reset-password"
 ];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip static files and images
