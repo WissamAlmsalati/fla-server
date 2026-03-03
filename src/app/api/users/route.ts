@@ -152,13 +152,13 @@ export async function POST(request: Request) {
       const newUser = await tx.user.create({
         data: {
           name: payload.name,
-          email: payload.email, // optional - null if not provided (manual customers)
+          email: payload.email ?? null,
           passwordHash: password,
           role: payload.role,
           mobile: payload.mobile,
           photoUrl: payload.photoUrl,
           passportUrl: payload.passportUrl,
-        } as any,
+        },
       });
 
       if (payload.role === Role.CUSTOMER && shippingCode) {
