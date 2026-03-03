@@ -287,6 +287,7 @@ export async function PATCH(
           body,
           userId: orderWithCustomer.customer.user.id,
           type: "ORDER_UPDATE",
+          referenceId: updatedOrder.id,
         }
       });
 

@@ -27,7 +27,6 @@ export function AddCustomerDialog() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
     mobile: "",
     photoUrl: "",
     passportUrl: "",
@@ -46,12 +45,11 @@ export function AddCustomerDialog() {
       // Refresh customers list
       dispatch(fetchCustomers());
       
-      toast.success("تم إنشاء العميل بنجاح");
+      toast.success("تم إنشاء العميل بنجاح. كلمة المرور الافتراضية هي رقم الهاتف.");
       setOpen(false);
       setFormData({
         name: "",
         email: "",
-        password: "",
         mobile: "",
         photoUrl: "",
         passportUrl: "",
@@ -108,30 +106,20 @@ export function AddCustomerDialog() {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email" className="text-right">
-                  البريد الإلكتروني
+                  البريد الإلكتروني (اختياري)
                 </Label>
                 <Input
                   id="email"
                   type="email"
+                  placeholder="اختياري"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password" className="text-right">
-                  كلمة المرور
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  minLength={6}
                 />
               </div>
             </div>
+            <p className="text-sm text-muted-foreground text-right">
+              💡 ستكون كلمة المرور الافتراضية هي رقم الهاتف. يمكن للعميل تغييرها لاحقاً.
+            </p>
 
             <div className="grid grid-cols-2 gap-4">
               <FileUpload

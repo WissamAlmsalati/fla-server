@@ -14,8 +14,12 @@ enum Role {
 
 const createUserSchema = z.object({
   name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(6),
+  // Treat empty string as "not provided"; only validate format if a value is given
+  email: z.preprocess(
+    (val) => (val === '' || val === null ? undefined : val),
+    z.string().email().optional()
+  ),
+  password: z.string().min(6).optional(),
   role: z.nativeEnum(Role),
   mobile: z.string().optional(),
   photoUrl: z.string().optional(),
@@ -96,12 +100,20 @@ export async function POST(request: Request) {
     const body = await request.json();
     const payload = createUserSchema.parse(body);
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email: payload.email },
-    });
+    // Auto-use mobile as password if no password provided
+    const password = payload.password ?? payload.mobile;
+    if (!password) {
+      return NextResponse.json({ error: "أدخل كلمة المرور أو رقم الهاتف" }, { status: 400 });
+    }
 
-    if (existingUser) {
-      return NextResponse.json({ error: "User already exists" }, { status: 400 });
+    // Check for duplicate email only if provided
+    if (payload.email) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: payload.email },
+      });
+      if (existingUser) {
+        return NextResponse.json({ error: "User already exists" }, { status: 400 });
+      }
     }
 
     // Generate shipping codes if role is CUSTOMER
@@ -140,13 +152,13 @@ export async function POST(request: Request) {
       const newUser = await tx.user.create({
         data: {
           name: payload.name,
-          email: payload.email,
-          passwordHash: payload.password, // Note: In a real app, hash this!
+          email: payload.email, // optional - null if not provided (manual customers)
+          passwordHash: password,
           role: payload.role,
           mobile: payload.mobile,
           photoUrl: payload.photoUrl,
           passportUrl: payload.passportUrl,
-        },
+        } as any,
       });
 
       if (payload.role === Role.CUSTOMER && shippingCode) {

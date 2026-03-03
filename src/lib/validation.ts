@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+function convertArabicNumerals(str: string): string {
+  const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  return str.replace(/[٠-٩]/g, (w) => arabicNumerals.indexOf(w).toString());
+}
+
 export const orderFiltersSchema = z.object({
   status: z.string().optional(),
   customerId: z.coerce.number().optional(),
@@ -10,7 +15,7 @@ export const orderFiltersSchema = z.object({
 });
 
 export const createOrderSchema = z.object({
-  tracking_number: z.string().min(1),
+  tracking_number: z.string().min(1).transform(convertArabicNumerals),
   name: z.string().min(1),
   usd_price: z.number().min(0).optional(),
   cny_price: z.number().optional(),
@@ -25,7 +30,7 @@ export const createOrderSchema = z.object({
 export const updateOrderSchema = z.object({
   status: z.enum(["purchased", "arrived_to_china", "shipping_to_libya", "arrived_libya", "ready_for_pickup", "delivered", "canceled"]).optional(),
   weight: z.number().optional(),
-  tracking_number: z.string().optional(),
+  tracking_number: z.string().transform(convertArabicNumerals).optional(),
   name: z.string().optional(),
   usd_price: z.number().optional(),
   cny_price: z.number().optional(),

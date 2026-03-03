@@ -172,7 +172,16 @@ export function CreateOrderDialog() {
                   <FormLabel>رقم التتبع</FormLabel>
                     <div className="flex gap-2">
                     <FormControl>
-                      <Input placeholder="Tracking Number" dir="ltr" {...field} />
+                      <Input
+                        placeholder="Tracking Number"
+                        dir="ltr"
+                        {...field}
+                        onChange={(e) => {
+                          const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+                          const convertedValue = e.target.value.replace(/[٠-٩]/g, (w) => arabicNumerals.indexOf(w).toString());
+                          field.onChange(convertedValue);
+                        }}
+                      />
                     </FormControl>
                     <div className="flex items-center gap-2">
                       <Button
@@ -481,7 +490,7 @@ export function CreateOrderDialog() {
                             >
                               إلغاء التحديد
                             </CommandItem>
-                            {flights.filter(f => f.status !== "delivered").map((flight) => (
+                            {flights.filter(f => f.status !== "delivered" && f.country === selectedRegion).map((flight) => (
                               <CommandItem
                                 value={flight.flightNumber}
                                 key={flight.id}
@@ -526,10 +535,19 @@ export function CreateOrderDialog() {
               )}
             />
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={form.formState.isSubmitting}>
                 إلغاء
               </Button>
-              <Button type="submit">حفظ</Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    جاري الحفظ...
+                  </>
+                ) : (
+                  "حفظ"
+                )}
+              </Button>
             </div>
           </form>
         </Form>

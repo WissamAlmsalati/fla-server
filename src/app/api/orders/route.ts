@@ -106,6 +106,7 @@ export async function GET(request: NextRequest) {
         ...(query.country && { country: query.country }),
       },
       take: query.limit,
+      skip: query.cursor ? 1 : undefined,
       cursor: query.cursor ? { id: Number(query.cursor) } : undefined,
       orderBy: { id: "desc" },
       include: {
@@ -272,7 +273,8 @@ export async function POST(request: Request) {
             title,
             body: notifBody,
             userId: customerUser.user.id,
-            type: "ORDER_UPDATE",
+            type: "NEW_ORDER",
+            referenceId: order.id,
           },
         });
 

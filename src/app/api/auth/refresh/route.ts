@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       sub: user.id,
       role: user.role,
       name: user.name,
-      email: user.email,
+      email: user.email ?? "",
       tokenVersion: user.tokenVersion,
       customerId: user.customerId,
     };

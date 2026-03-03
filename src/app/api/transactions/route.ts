@@ -132,7 +132,8 @@ export async function POST(request: NextRequest) {
                         title: title,
                         body: notifBody,
                         userId: customerUser.user.id,
-                        type: "WALLET_UPDATE"
+                        type: "WALLET_UPDATE",
+                        referenceId: transactionResult.id,
                     }
                 });
 
@@ -234,15 +235,28 @@ export async function GET(request: NextRequest) {
             where.notes = { contains: search, mode: "insensitive" };
         }
 
-        // Fetch transactions
+        const limit = parseInt(searchParams.get("limit") || "20");
+        const cursor = searchParams.get("cursor");
+
+        // Fetch paginated transactions
         const transactions = await prisma.transaction.findMany({
             where,
+            take: limit,
+            skip: cursor ? 1 : undefined,
+            cursor: cursor ? { id: Number(cursor) } : undefined,
             orderBy: {
                 createdAt: "desc",
             },
         });
 
-        return NextResponse.json(transactions);
+        // Import parsePaginationMeta at the top of this file and use it
+        return NextResponse.json({
+            data: transactions,
+            meta: {
+                count: transactions.length,
+                nextCursor: transactions.length === limit ? transactions[transactions.length - 1].id : null,
+            }
+        });
     } catch (error) {
         console.error("Error fetching transactions:", error);
         return NextResponse.json(

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { signAccessToken, signRefreshToken } from "@/lib/auth";
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().min(1, "Email or phone is required"),  // accepts email or mobile
   password: z.string().min(6),
   fcmToken: z.string().optional().describe("Firebase Cloud Messaging token for push notifications"),
 });
@@ -13,12 +13,18 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const payload = loginSchema.parse(body);
-    const user = await prisma.user.findUnique({
-      where: { email: payload.email },
+    // Look up by email OR mobile number
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: payload.email },
+          { mobile: payload.email },
+        ],
+      },
       include: { customer: true }
     });
     if (!user || payload.password !== user.passwordHash) {
-      return NextResponse.json({ error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" }, { status: 401 });
+      return NextResponse.json({ error: "البريد الإلكتروني أو رقم الهاتف أو كلمة المرور غير صحيحة" }, { status: 401 });
     }
 
     // Check if user account is suspended
@@ -56,7 +62,7 @@ export async function POST(request: Request) {
       sub: user.id,
       role: user.role,
       name: user.name,
-      email: user.email,
+      email: user.email ?? "",
       tokenVersion: user.tokenVersion,
       customerId: user.customerId,
     });
@@ -64,7 +70,7 @@ export async function POST(request: Request) {
       sub: user.id,
       role: user.role,
       name: user.name,
-      email: user.email,
+      email: user.email ?? "",
       tokenVersion: user.tokenVersion,
       customerId: user.customerId,
     });
