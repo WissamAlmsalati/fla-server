@@ -52,6 +52,7 @@ const exportUsers = (users: User[]) => {
   // Transform data for export
   const dataToExport = users.map(user => ({
     ...user,
+    email: user.email || "-",
     role: roleMap[user.role] || user.role,
     createdAt: format(new Date(user.createdAt), "dd MMMM yyyy", { locale: ar }),
     mobile: user.mobile || "-"
@@ -126,7 +127,7 @@ export function UsersTable({ filters }: UsersTableProps) {
               onClick={() => router.push(`/users/${user.id}`)}
             >
               <TableCell className="font-medium">{user.name}</TableCell>
-              <TableCell>{user.email}</TableCell>
+              <TableCell dir="ltr" className="text-right">{user.email || "لا يوجد"}</TableCell>
               <TableCell>{user.mobile || "-"}</TableCell>
               <TableCell>{user.location || "-"}</TableCell>
               <TableCell>

@@ -5,7 +5,7 @@ export type Role = "ADMIN" | "PURCHASE_OFFICER" | "CHINA_WAREHOUSE" | "LIBYA_WAR
 export type User = {
   id: number;
   name: string;
-  email: string;
+  email: string | null;
   mobile?: string;
   location?: string;
   photoUrl?: string;

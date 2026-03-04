@@ -179,8 +179,7 @@ export function UserDetail({ userId }: UserDetailProps) {
                     حساب معلق
                   </Badge>
                 )}
-                <span className="text-sm text-muted-foreground" dir="ltr">{user.email}</span>
-              </div>
+                <span className="text-sm text-muted-foreground" dir="ltr">{user.email || "لا يوجد بريد إلكتروني"}</span>              </div>
             </div>
           </div>
         </div>
@@ -443,8 +442,7 @@ export function UserDetail({ userId }: UserDetailProps) {
                       <span className="text-sm text-muted-foreground flex items-center gap-2">
                         <Mail className="h-3 w-3" /> البريد الإلكتروني
                       </span>
-                      <div className="font-medium" dir="ltr">{user.email}</div>
-                    </div>
+                      <div className="font-medium" dir="ltr">{user.email || "-"}</div>                    </div>
 
                     <div className="space-y-1">
                       <span className="text-sm text-muted-foreground flex items-center gap-2">
