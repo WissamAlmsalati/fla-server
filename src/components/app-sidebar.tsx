@@ -9,11 +9,7 @@ import {
   Settings,
   MessageSquare,
   Bell,
-  LifeBuoy,
-  Search,
-  Command,
-  ChevronRight,
-  ChevronLeft,
+  ShieldCheck,
   Plane
 } from "lucide-react"
 import Image from "next/image"
@@ -126,7 +122,13 @@ const data = {
       icon: Bell,
     },
   ],
-
+  settingsManagement: [
+    {
+      name: "سياسة الخصوصية",
+      url: "/settings",
+      icon: ShieldCheck,
+    },
+  ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -153,6 +155,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   });
 
   const filteredMobileManagement = data.mobileManagement.filter(() => {
+    if (role === "ADMIN") return true;
+    return false;
+  });
+
+  const filteredSettingsManagement = data.settingsManagement.filter(() => {
     if (role === "ADMIN") return true;
     return false;
   });
@@ -199,6 +206,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         )}
         {filteredMobileManagement.length > 0 && (
           <NavDocuments items={filteredMobileManagement} title="إدارة التطبيق" />
+        )}
+        {filteredSettingsManagement.length > 0 && (
+          <NavDocuments items={filteredSettingsManagement} title="الإعدادات" />
         )}
       </SidebarContent>
       <SidebarFooter>

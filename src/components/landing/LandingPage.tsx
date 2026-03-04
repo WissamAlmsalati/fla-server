@@ -553,11 +553,11 @@ const css = `
 .lp-hero__card-row { display: flex; justify-content: space-between; align-items: center; }
 .lp-hero__card-label { font-size: 12px; color: var(--muted); font-weight: 500; }
 .lp-hero__card-val { font-size: 13px; font-weight: 600; color: var(--text); }
-.lp-hero__card-val--blue { color: #3b82f6; }
-.lp-hero__card-badge { font-size: 11px; font-weight: 700; background: #dbeafe; color: #1d4ed8; padding: 3px 10px; border-radius: 100px; }
+.lp-hero__card-val--blue { color: var(--navy-light); }
+.lp-hero__card-badge { font-size: 11px; font-weight: 700; background: rgba(12,26,53,.1); color: var(--navy); padding: 3px 10px; border-radius: 100px; }
 .lp-hero__progress-wrap { display: flex; align-items: center; gap: 10px; }
 .lp-hero__progress-bar { flex: 1; height: 6px; border-radius: 3px; background: #e2e8f0; }
-.lp-hero__progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--navy-mid), #3b82f6); }
+.lp-hero__progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--navy-mid), var(--navy-light)); }
 .lp-hero__progress-label { font-size: 12px; font-weight: 700; color: var(--navy); }
 .lp-hero__mini { display: flex; align-items: center; gap: 12px; background: var(--white); border-radius: 14px; padding: 14px 18px; box-shadow: var(--shadow-md); position: absolute; border: 1px solid var(--border); }
 .lp-hero__mini span { font-size: 24px; }

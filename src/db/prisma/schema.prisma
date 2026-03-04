@@ -249,3 +249,20 @@ model PasswordResetCode {
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
+model SiteSettings {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model SettingsChangeLog {
+  id            Int      @id @default(autoincrement())
+  settingKey    String
+  changedById   Int
+  changedByName String
+  note          String?
+  diffSummary   String?
+  snapshot      String?
+  createdAt     DateTime @default(now())
+}

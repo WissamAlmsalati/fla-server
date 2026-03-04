@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+import { BulkImportDialog } from "@/features/users/components/BulkImportDialog";
+
 export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -33,7 +35,10 @@ export default function UsersPage() {
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">إدارة المستخدمين</h1>
-                <AddUserDialog />
+                <div className="flex items-center gap-2">
+                  <BulkImportDialog />
+                  <AddUserDialog />
+                </div>
               </div>
 
               <div className="flex gap-2">
