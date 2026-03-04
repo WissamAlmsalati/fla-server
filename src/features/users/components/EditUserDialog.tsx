@@ -37,7 +37,7 @@ export function EditUserDialog({ user, onSuccess }: EditUserDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: user.name,
-    email: user.email,
+    email: user.email || "",
     password: "",
     role: user.role,
     mobile: user.mobile || "",
