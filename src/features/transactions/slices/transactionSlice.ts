@@ -69,7 +69,8 @@ export const fetchTransactions = createAsyncThunk(
                 return rejectWithValue(error.error || "Failed to fetch transactions");
             }
 
-            return await response.json();
+            const data = await response.json();
+            return data.data || [];
         } catch (error: any) {
             return rejectWithValue(error.message || "Network error");
         }
