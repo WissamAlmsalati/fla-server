@@ -8,6 +8,7 @@ export type JWTPayload = {
   email: string;
   tokenVersion: number;
   customerId?: number | null;
+  photoUrl?: string | null;
 };
 
 export async function requireAuth(request: Request) {
@@ -36,12 +37,12 @@ export async function requireAuth(request: Request) {
     throw new Error("Invalid token");
   }
   return {
-    ...payload,
     sub: user.id,
     role: user.role,
     name: user.name,
     email: user.email,
-    customerId: user.customerId
+    customerId: user.customerId,
+    photoUrl: user.photoUrl
   };
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 
 
 
@@ -27,11 +27,11 @@ export default function CustomersPage() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
-              <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">إدارة العملاء</h1>
-                <div className="flex items-center gap-2">
-                  <BulkImportDialog />
-                  <AddCustomerDialog />
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight">إدارة العملاء</h1>
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  <div className="flex-1 sm:flex-none"><BulkImportDialog /></div>
+                  <div className="flex-1 sm:flex-none"><AddCustomerDialog /></div>
                 </div>
               </div>
 
@@ -47,7 +47,7 @@ export default function CustomersPage() {
                 </div>
               </div>
 
-              <CustomersTable filters={{ search: debouncedSearch }} />
+              <Suspense fallback={null}><CustomersTable filters={{ search: debouncedSearch }} /></Suspense>
             </div>
           </div>
         </div>

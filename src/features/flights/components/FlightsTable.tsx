@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
-import { fetchFlights, updateFlight } from "../slices/flightSlice";
+import { fetchFlights, Flight } from "../slices/flightSlice";
+import { EditFlightDialog } from "./EditFlightDialog";
 import {
   Table,
   TableBody,
@@ -14,15 +15,17 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Download, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { exportToCSV } from "@/lib/exportToCSV";
+import { ar } from "date-fns/locale";
 
 interface FlightsTableProps {
   filters?: Record<string, string | number>;
@@ -46,35 +49,48 @@ const countryMap: Record<string, string> = {
   TURKEY: "تركيا",
 };
 
+const exportFlights = (flights: Flight[]) => {
+  const columnMappings = {
+    flightNumber: "رقم الرحلة",
+    country: "الدولة",
+    departureDate: "تاريخ الإقلاع",
+    arrivalDate: "تاريخ الوصول",
+    "_count.orders": "عدد الطلبات",
+    type: "نوع الشحن",
+    status: "الحالة",
+  };
+  
+  const dataToExport = flights.map(flight => ({
+    ...flight,
+    country: countryMap[flight.country] || flight.country,
+    type: flight.type ? typeMap[flight.type]?.label : "جوي",
+    status: statusMap[flight.status]?.label || flight.status,
+    departureDate: flight.departureDate ? format(new Date(flight.departureDate), "dd MMMM yyyy", { locale: ar }) : "-",
+    arrivalDate: flight.arrivalDate ? format(new Date(flight.arrivalDate), "dd MMMM yyyy", { locale: ar }) : "-",
+  }));
+  
+  exportToCSV(dataToExport, columnMappings, "flights");
+};
+
+const ITEMS_PER_PAGE = 20;
+
 export function FlightsTable({ filters }: FlightsTableProps) {
   const router = useRouter();
   const dispatch = useReduxDispatch();
   const { list: flights, status, error } = useReduxSelector((state) => state.flights);
   const { user } = useReduxSelector((state) => state.auth);
+  
+  const [editingFlight, setEditingFlight] = useState<Flight | null>(null);
+
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const pageParam = searchParams.get("page");
+  const currentPage = pageParam ? parseInt(pageParam, 10) : 1;
+  const sortParam = searchParams.get("sort") || "desc"; // Default desc
 
   useEffect(() => {
     dispatch(fetchFlights(filters?.search as string | undefined));
-  }, [dispatch, JSON.stringify(filters)]);
-
-  const handleStatusChange = async (flightId: number, newStatus: string) => {
-    try {
-      await dispatch(updateFlight({ id: flightId, data: { status: newStatus } })).unwrap();
-      toast.success("تم تحديث حالة الرحلة");
-      dispatch(fetchFlights(filters?.search as string | undefined));
-    } catch (err: any) {
-      toast.error(err.message || "فشل تحديث الحالة");
-    }
-  };
-
-  const handleTypeChange = async (flightId: number, newType: string) => {
-    try {
-      await dispatch(updateFlight({ id: flightId, data: { type: newType as "AIR" | "SEA" } })).unwrap();
-      toast.success("تم تحديث نوع الشحن");
-      dispatch(fetchFlights(filters?.search as string | undefined));
-    } catch (err: any) {
-      toast.error(err.message || "فشل تحديث نوع الشحن");
-    }
-  };
+  }, [dispatch, JSON.stringify(filters), searchParams, pathname, router]);
 
   if (status === "loading") {
     return <div className="text-center p-4">جاري التحميل...</div>;
@@ -84,10 +100,68 @@ export function FlightsTable({ filters }: FlightsTableProps) {
     return <div className="text-center text-red-500 p-4">خطأ: {error}</div>;
   }
 
+  // Sort flights
+  const sortedFlights = [...flights].sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    
+    if (dateA !== dateB) {
+      return sortParam === "asc" ? dateA - dateB : dateB - dateA;
+    }
+    
+    // If dates are perfectly identical, sort by ID
+    return sortParam === "asc" ? a.id - b.id : b.id - a.id;
+  });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedFlights.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedFlights = sortedFlights.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", page.toString());
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSortChange = (newSort: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("sort", newSort);
+    params.set("page", "1"); // Reset to page 1 on sort change
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   const canEdit = user?.role === "ADMIN" || user?.role === "CHINA_WAREHOUSE" || user?.role === "LIBYA_WAREHOUSE";
 
   return (
-    <div className="rounded-md border bg-white">
+    <>
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <ArrowUpDown className="h-4 w-4" />
+              {sortParam === "desc" ? "الأحدث أولاً" : "الأقدم أولاً"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleSortChange("desc")}>
+              الأحدث أولاً
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSortChange("asc")}>
+              الأقدم أولاً
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <Button onClick={() => exportFlights(sortedFlights)} variant="outline" size="sm">
+          <Download className="w-4 h-4 mr-2" />
+          تصدير CSV
+        </Button>
+      </div>
+
+      <div className="rounded-md border bg-white overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -95,15 +169,18 @@ export function FlightsTable({ filters }: FlightsTableProps) {
             <TableHead className="text-right">الدولة</TableHead>
             <TableHead className="text-right">تاريخ الإقلاع</TableHead>
             <TableHead className="text-right">تاريخ الوصول</TableHead>
-            <TableHead className="text-right text-center">عدد الطلبات المربوطة</TableHead>
+            <TableHead className="text-center">عدد الطلبات المربوطة</TableHead>
             <TableHead className="text-right">نوع الشحن</TableHead>
             <TableHead className="text-right">الحالة</TableHead>
-            <TableHead className="text-right">تقرير</TableHead>
+            <TableHead className="text-right">إجراءات</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {flights.map((flight) => (
-            <TableRow key={flight.id} className="hover:bg-muted/50">
+          {paginatedFlights.map((flight) => (
+            <TableRow 
+              key={flight.id} 
+              className="hover:bg-muted/50"
+            >
               <TableCell className="font-bold text-lg font-mono" dir="ltr">
                 {flight.flightNumber}
               </TableCell>
@@ -125,41 +202,34 @@ export function FlightsTable({ filters }: FlightsTableProps) {
                 </Badge>
               </TableCell>
               <TableCell onClick={(e) => e.stopPropagation()}>
-                {canEdit ? (
-                  <Select
-                    defaultValue={flight.status}
-                    onValueChange={(val) => handleStatusChange(flight.id, val)}
-                  >
-                    <SelectTrigger className="w-[140px] h-8 text-sm" dir="rtl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent dir="rtl">
-                      {Object.entries(statusMap).map(([key, { label }]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Badge className={statusMap[flight.status]?.color || "bg-gray-100"}>
-                    {statusMap[flight.status]?.label || flight.status}
-                  </Badge>
-                )}
+                <Badge className={statusMap[flight.status]?.color || "bg-gray-100"}>
+                  {statusMap[flight.status]?.label || flight.status}
+                </Badge>
               </TableCell>
               <TableCell onClick={(e) => e.stopPropagation()}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push(`/flights/${flight.id}`)}
-                  disabled={(flight._count?.orders || 0) === 0}
-                >
-                  عرض التقرير
-                </Button>
+                <div className="flex gap-2 justify-end">
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingFlight(flight)}
+                    >
+                      تعديل
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/flights/${flight.id}`)}
+                    disabled={(flight._count?.orders || 0) === 0}
+                  >
+                    عرض التقرير
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
-          {flights.length === 0 && (
+          {paginatedFlights.length === 0 && (
             <TableRow>
               <TableCell colSpan={8} className="text-center h-24">
                 لا يوجد رحلات مسجلة
@@ -168,6 +238,90 @@ export function FlightsTable({ filters }: FlightsTableProps) {
           )}
         </TableBody>
       </Table>
-    </div>
+      </div>
+
+      {sortedFlights.length > 0 && (
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-sm text-muted-foreground">
+            عرض {startIndex + 1} - {Math.min(endIndex, sortedFlights.length)} من {sortedFlights.length} رحلة
+          </div>
+        
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronRight className="h-4 w-4" />
+                السابق
+              </Button>
+              
+              <div className="flex items-center gap-1">
+                {(() => {
+                  const pages = [];
+                  pages.push(1);
+
+                  if (currentPage > 3) {
+                    pages.push('...');
+                  }
+
+                  const start = Math.max(2, currentPage - 1);
+                  const end = Math.min(totalPages - 1, currentPage + 1);
+
+                  for (let i = start; i <= end; i++) {
+                    pages.push(i);
+                  }
+
+                  if (currentPage < totalPages - 2) {
+                    pages.push('...');
+                  }
+
+                  if (totalPages > 1) {
+                    pages.push(totalPages);
+                  }
+
+                  return pages.map((page, index) => {
+                    if (page === '...') {
+                      return <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">...</span>;
+                    }
+
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page as number)}
+                        className="min-w-[2.5rem]"
+                      >
+                        {page}
+                      </Button>
+                    );
+                  });
+                })()}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                التالي
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      
+      <EditFlightDialog
+        flight={editingFlight}
+        open={!!editingFlight}
+        onOpenChange={(open) => !open && setEditingFlight(null)}
+        filters={filters}
+      />
+    </>
   );
 }

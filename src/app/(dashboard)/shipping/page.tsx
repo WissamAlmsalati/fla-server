@@ -40,13 +40,15 @@ export default function Page() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
-              <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">إدارة أسعار الشحن</h1>
-                <AddRateDialog />
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight">إدارة أسعار الشحن</h1>
+                <div className="w-full sm:w-auto">
+                  <AddRateDialog />
+                </div>
               </div>
 
-              <div className="flex gap-2">
-                <div className="relative flex-1">
+              <div className="flex flex-wrap gap-2">
+                <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="بحث بالتصنيف، نوع الشحن..."
@@ -56,7 +58,7 @@ export default function Page() {
                   />
                 </div>
                 <Select value={countryFilter} onValueChange={setCountryFilter}>
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger className="w-full sm:w-[200px]">
                     <SelectValue placeholder="تصفية حسب الدولة" />
                   </SelectTrigger>
                   <SelectContent>

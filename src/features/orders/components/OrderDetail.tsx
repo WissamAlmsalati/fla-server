@@ -137,32 +137,40 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
   return (
     <div className="space-y-6 text-right" dir="rtl">
       {/* Header Section */}
-      <div className="flex items-center justify-between gap-4 p-6 bg-linear-to-r from-primary/5 to-primary/10 rounded-lg border">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <Package className="h-8 w-8 text-primary" />
-              {order.name}
-            </h1>
-            <div className="text-sm text-muted-foreground font-mono mt-2 flex items-center gap-2">
-              <span>رقم التتبع:</span>
-              <Badge variant="secondary" className="font-mono">
-                {order.trackingNumber}
-              </Badge>
+      <div className="flex flex-col gap-3 p-4 md:p-6 bg-linear-to-r from-primary/5 to-primary/10 rounded-lg border">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0">
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-3xl font-bold flex items-center gap-2 truncate">
+                <Package className="h-6 w-6 md:h-8 md:w-8 text-primary shrink-0" />
+                <span className="truncate">{order.name}</span>
+              </h1>
+              <div className="text-xs text-muted-foreground font-mono mt-1 flex items-center gap-2 flex-wrap">
+                <span>رقم التتبع:</span>
+                <Badge variant="secondary" className="font-mono text-xs">
+                  {order.trackingNumber}
+                </Badge>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="text-xs px-4 py-2 capitalize border-2">
+          <Badge variant="outline" className="text-xs px-3 py-1 border-2 shrink-0 hidden sm:flex">
             {getStatusLabel(order.status, order.country)}
           </Badge>
+        </div>
+        {/* Badge for mobile */}
+        <Badge variant="outline" className="text-xs px-3 py-1 border-2 sm:hidden self-start">
+          {getStatusLabel(order.status, order.country)}
+        </Badge>
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             onClick={() => generateStickerLabel(order)}
             variant="outline"
-            className="gap-2"
+            className="gap-2 flex-1 sm:flex-none"
+            size="sm"
           >
             <Truck className="h-4 w-4" />
             طباعة ملصق
@@ -171,13 +179,14 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
             <Button
               onClick={() => generateInvoicePDF(order)}
               variant="outline"
-              className="gap-2"
+              className="gap-2 flex-1 sm:flex-none"
+              size="sm"
             >
               <FileText className="h-4 w-4" />
               تحميل الفاتورة
             </Button>
           )}
-          <Button onClick={() => setShowEditDrawer(true)} className="gap-2">
+          <Button onClick={() => setShowEditDrawer(true)} className="gap-2 flex-1 sm:flex-none" size="sm">
             <Edit className="h-4 w-4" />
             تعديل
           </Button>
@@ -186,8 +195,13 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column - Order Details & Customer Info */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Status Timeline — first on mobile */}
+        <div className="lg:col-span-1 order-first lg:order-last">
+          <StatusTimeline currentStatus={order.status} country={order.country} logs={order.logs} />
+        </div>
+
+        {/* Main column */}
+        <div className="lg:col-span-2 space-y-6 order-last lg:order-first">
           {/* Order Details Card */}
           <Card>
             <CardHeader>

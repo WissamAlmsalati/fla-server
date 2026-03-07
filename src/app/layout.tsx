@@ -22,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body className={`${almarai.variable} font-sans antialiased`} suppressHydrationWarning>
         <Providers>{children}</Providers>
         <Toaster />

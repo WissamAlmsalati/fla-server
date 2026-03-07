@@ -65,6 +65,7 @@ export async function POST(request: Request) {
       email: user.email ?? "",
       tokenVersion: user.tokenVersion,
       customerId: user.customerId,
+      photoUrl: user.photoUrl,
     });
     const refreshToken = signRefreshToken({
       sub: user.id,
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
       email: user.email ?? "",
       tokenVersion: user.tokenVersion,
       customerId: user.customerId,
+      photoUrl: user.photoUrl,
     });
 
     const response = NextResponse.json({
@@ -89,7 +91,8 @@ export async function POST(request: Request) {
         usaCode: user.customer?.usaCode,
         turkeyCode: user.customer?.turkeyCode,
         hasFcmToken: user.fcmTokens && user.fcmTokens.length > 0,
-        fcmTokens: user.fcmTokens
+        fcmTokens: user.fcmTokens,
+        photoUrl: user.photoUrl,
       }
     });
     response.cookies.set("access_token", accessToken, {

@@ -15,6 +15,16 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -75,10 +85,24 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
   const [flightOpen, setFlightOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // New states for admin editing
+  const [name, setName] = useState<string>("");
+  const [trackingNumber, setTrackingNumber] = useState<string>("");
+  const [usdPrice, setUsdPrice] = useState<string>("");
+  const [cnyPrice, setCnyPrice] = useState<string>("");
+  const [productUrl, setProductUrl] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [alertOpen, setAlertOpen] = useState(false);
+
   useEffect(() => {
     if (order) {
       setStatus(order.status);
       setWeight(order.weight?.toString() || "");
+      setName(order.name || "");
+      setTrackingNumber(order.trackingNumber || "");
+      setUsdPrice(order.usdPrice?.toString() || "");
+      setCnyPrice(order.cnyPrice?.toString() || "");
+      setProductUrl(order.productUrl || "");
       
       // Pre-fill shipping info if available
       if (order.shippingRateId) {
@@ -124,7 +148,12 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
     if (status === order.status && 
         weight === (order.weight?.toString() || "") && 
         shippingRateId === (order.shippingRateId?.toString() || "") &&
-        flightId === (order.flightId?.toString() || "")) {
+        flightId === (order.flightId?.toString() || "") &&
+        name === (order.name || "") &&
+        trackingNumber === (order.trackingNumber || "") &&
+        usdPrice === (order.usdPrice?.toString() || "") &&
+        cnyPrice === (order.cnyPrice?.toString() || "") &&
+        productUrl === (order.productUrl || "")) {
       return;
     }
 
@@ -136,6 +165,37 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
       return;
     }
 
+    // Validation for Admin edits
+    if (role === "ADMIN") {
+      const newErrors: Record<string, string> = {};
+      if (!name.trim()) newErrors.name = "اسم الطلب مطلوب";
+      if (!trackingNumber.trim()) newErrors.trackingNumber = "رقم التتبع مطلوب";
+      if (!usdPrice || isNaN(parseFloat(usdPrice)) || parseFloat(usdPrice) < 0) {
+        newErrors.usdPrice = "السعر بالدولار غير صالح";
+      }
+      if (cnyPrice && (isNaN(parseFloat(cnyPrice)) || parseFloat(cnyPrice) < 0)) {
+        newErrors.cnyPrice = "السعر باليوان غير صالح";
+      }
+      if (productUrl && !productUrl.startsWith("http")) {
+        newErrors.productUrl = "يجب أن يبدأ الرابط بـ http أو https";
+      }
+
+      setErrors(newErrors);
+      if (Object.keys(newErrors).length > 0) {
+        toast.error("يرجى تصحيح الأخطاء قبل الحفظ");
+        return;
+      }
+      
+      // Use AlertDialog instead of native confirm to avoid strict-mode bubbling issues
+      setAlertOpen(true);
+      return;
+    }
+
+    // Direct save for non-admins
+    await executeSave();
+  };
+
+  const executeSave = async () => {
     try {
       setLoading(true);
       await dispatch(updateOrder({ 
@@ -144,7 +204,12 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
           status,
           weight: weight ? parseFloat(weight) : undefined,
           shippingRateId: shippingRateId ? parseInt(shippingRateId) : undefined,
-          flightId: flightId ? parseInt(flightId) : undefined
+          flightId: flightId ? parseInt(flightId) : undefined,
+          name: role === "ADMIN" ? name : undefined,
+          tracking_number: role === "ADMIN" ? trackingNumber : undefined,
+          usd_price: role === "ADMIN" && usdPrice !== "" ? parseFloat(usdPrice) : undefined,
+          cny_price: role === "ADMIN" && cnyPrice !== "" ? parseFloat(cnyPrice) : undefined,
+          product_url: role === "ADMIN" && productUrl !== "" ? productUrl : undefined,
         } 
       })).unwrap();
       toast.success("تم تحديث حالة الطلب بنجاح");
@@ -154,6 +219,7 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
       toast.error(error.message || "فشل تحديث حالة الطلب");
     } finally {
       setLoading(false);
+      setAlertOpen(false);
     }
   };
 
@@ -163,6 +229,7 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
   };
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto" dir="rtl">
         <div className="mx-auto w-full max-w-full md:max-w-sm px-2 md:px-0">
@@ -174,7 +241,65 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
           </SheetHeader>
           
           <div className="p-4 pb-0 space-y-6">
-            {/* Order Details Cards */}
+            {/* Admin Base Info Edits */}
+            {role === "ADMIN" && (
+              <div className="space-y-4 p-3 bg-muted/30 rounded-lg border">
+                <div className="space-y-2">
+                  <Label className={errors.name ? "text-destructive" : ""}>اسم الطلب <span className="text-destructive">*</span></Label>
+                  <Input 
+                    value={name} 
+                    onChange={e => { setName(e.target.value); setErrors(prev => ({...prev, name: ""})) }} 
+                    dir="rtl" 
+                    className={errors.name ? "border-destructive focus-visible:ring-destructive" : ""}
+                  />
+                  {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label className={errors.trackingNumber ? "text-destructive" : ""}>رقم التتبع <span className="text-destructive">*</span></Label>
+                  <div className="flex gap-2 items-start">
+                    <div className="flex-1 space-y-1">
+                      <Input 
+                        value={trackingNumber} 
+                        onChange={e => { setTrackingNumber(e.target.value); setErrors(prev => ({...prev, trackingNumber: ""})) }} 
+                        dir="ltr" 
+                        className={`text-right ${errors.trackingNumber ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                      />
+                      {errors.trackingNumber && <p className="text-xs text-destructive">{errors.trackingNumber}</p>}
+                    </div>
+                    <Button variant="outline" size="icon" onClick={() => copyToClipboard(trackingNumber)} type="button">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className={errors.usdPrice ? "text-destructive" : ""}>السعر (USD) <span className="text-destructive">*</span></Label>
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      value={usdPrice} 
+                      onChange={e => { setUsdPrice(e.target.value); setErrors(prev => ({...prev, usdPrice: ""})) }} 
+                      dir="ltr" 
+                      className={`text-right ${errors.usdPrice ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    />
+                    {errors.usdPrice && <p className="text-xs text-destructive">{errors.usdPrice}</p>}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className={errors.productUrl ? "text-destructive" : ""}>رابط المنتج</Label>
+                  <Input 
+                    value={productUrl} 
+                    onChange={e => { setProductUrl(e.target.value); setErrors(prev => ({...prev, productUrl: ""})) }} 
+                    dir="ltr" 
+                    className={`text-right ${errors.productUrl ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    placeholder="https://" 
+                  />
+                  {errors.productUrl && <p className="text-xs text-destructive">{errors.productUrl}</p>}
+                </div>
+              </div>
+            )}
+
+            {/* Order Details Cards (For Non-Admins or Display context) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
               <div className="flex flex-col gap-1 p-3 bg-muted/50 rounded-lg">
                 <span className="text-xs text-muted-foreground">العميل</span>
@@ -193,25 +318,30 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                   })()}
                 </span>
               </div>
-              <div className="flex flex-col gap-1 p-3 bg-muted/50 rounded-lg">
-                <span className="text-xs text-muted-foreground">السعر</span>
-                <span className="font-medium text-sm">${order.usdPrice}</span>
-                {order.cnyPrice && (
-                  <span className="text-xs text-muted-foreground">¥{order.cnyPrice}</span>
-                )}
-              </div>
+              
+              {role !== "ADMIN" && (
+                <div className="flex flex-col gap-1 p-3 bg-muted/50 rounded-lg">
+                  <span className="text-xs text-muted-foreground">السعر</span>
+                  <span className="font-medium text-sm">${order.usdPrice}</span>
+                  {order.cnyPrice && (
+                    <span className="text-xs text-muted-foreground">¥{order.cnyPrice}</span>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Tracking Number Section */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-2 md:p-3 border rounded-lg gap-2">
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground">رقم التتبع</span>
-                <span className="font-mono font-medium">{order.trackingNumber}</span>
+            {/* Tracking Number Display (For Non-Admins) */}
+            {role !== "ADMIN" && (
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-2 md:p-3 border rounded-lg gap-2">
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">رقم التتبع</span>
+                  <span className="font-mono font-medium">{order.trackingNumber}</span>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(order.trackingNumber)}>
+                  <Copy className="h-4 w-4" />
+                </Button>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => copyToClipboard(order.trackingNumber)}>
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
+            )}
 
             {/* Status Change Section */}
             <div className="space-y-3">
@@ -437,8 +567,8 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
               طباعة ملصق
             </Button>
 
-            {/* Product Link */}
-            {order.productUrl && (
+            {/* Product Link (For Non-Admins since Admins have an input for it) */}
+            {role !== "ADMIN" && order.productUrl && (
               <Button variant="outline" className="w-full gap-2 text-sm md:text-base" asChild>
                 <a href={order.productUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" />
@@ -457,7 +587,12 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
                 (status === order.status && 
                  weight === (order.weight?.toString() || "") && 
                  shippingRateId === (order.shippingRateId?.toString() || "") &&
-                 flightId === (order.flightId?.toString() || ""))
+                 flightId === (order.flightId?.toString() || "") &&
+                 name === (order.name || "") &&
+                 trackingNumber === (order.trackingNumber || "") &&
+                 usdPrice === (order.usdPrice?.toString() || "") &&
+                 cnyPrice === (order.cnyPrice?.toString() || "") &&
+                 productUrl === (order.productUrl || ""))
               }
             >
               {loading ? "جاري الحفظ..." : "حفظ التغييرات"}
@@ -469,5 +604,27 @@ export function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate }: Orde
         </div>
       </SheetContent>
     </Sheet>
+
+    {/* Confirmation Alert Dialog for Admin */}
+    <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+      <AlertDialogContent dir="rtl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>تأكيد التعديلات</AlertDialogTitle>
+          <AlertDialogDescription>
+            هل أنت متأكد من حفظ التغييرات على هذا الطلب؟ قد يؤثر ذلك على سعر القطعة وحالتها لدى العميل.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="gap-2 sm:gap-0 mt-4">
+          <AlertDialogCancel disabled={loading}>إلغاء</AlertDialogCancel>
+          <AlertDialogAction onClick={(e) => {
+            e.preventDefault(); // Prevent closing until save finishes
+            executeSave();
+          }} disabled={loading}>
+            {loading ? "جاري الحفظ..." : "تأكيد الحفظ"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

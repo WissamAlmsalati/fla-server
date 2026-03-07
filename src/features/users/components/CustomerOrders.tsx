@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Order } from "@/features/orders/slices/orderSlice";
 import { fetchOrders } from "@/features/orders/api/ordersService";
 import {
@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,13 +36,18 @@ const statusMap: Record<string, string> = {
 
 export function CustomerOrders({ customerId }: CustomerOrdersProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const pageParam = searchParams.get("page");
+  const currentPage = pageParam ? parseInt(pageParam, 10) : 1;
+  const prevSearchRef = useRef(debouncedSearch);
+  const prevStatusFilterRef = useRef(statusFilter);
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set());
   const [customerName, setCustomerName] = useState("");
 
@@ -81,6 +86,17 @@ export function CustomerOrders({ customerId }: CustomerOrdersProps) {
     };
     load();
   }, [customerId, debouncedSearch, statusFilter]);
+
+  useEffect(() => {
+    // Only reset to page 1 if the search or status filter ACTUALLY changed.
+    if (prevSearchRef.current !== debouncedSearch || prevStatusFilterRef.current !== statusFilter) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("page");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      prevSearchRef.current = debouncedSearch;
+      prevStatusFilterRef.current = statusFilter;
+    }
+  }, [debouncedSearch, statusFilter, searchParams, pathname, router]);
 
   const handleSelectOrder = (orderId: number, checked: boolean) => {
     const newSelected = new Set(selectedOrders);
@@ -273,7 +289,12 @@ export function CustomerOrders({ customerId }: CustomerOrdersProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              onClick={() => {
+                const newPage = Math.max(1, currentPage - 1);
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("page", newPage.toString());
+                router.push(`${pathname}?${params.toString()}`, { scroll: false });
+              }}
               disabled={currentPage === 1}
             >
               <ChevronRight className="h-4 w-4" />
@@ -285,7 +306,12 @@ export function CustomerOrders({ customerId }: CustomerOrdersProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              onClick={() => {
+                const newPage = Math.min(totalPages, currentPage + 1);
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("page", newPage.toString());
+                router.push(`${pathname}?${params.toString()}`, { scroll: false });
+              }}
               disabled={currentPage === totalPages}
             >
               التالي

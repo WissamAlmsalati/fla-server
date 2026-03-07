@@ -43,6 +43,7 @@ export function AuthHydrator() {
           name: payload.name,
           email: payload.email,
           customerId: payload.customerId,
+          photoUrl: payload.photoUrl,
         }));
       }
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 
 
 
@@ -47,7 +47,7 @@ export default function FlightsPage() {
                 </div>
               </div>
 
-              <FlightsTable filters={{ search: debouncedSearch }} />
+              <Suspense fallback={null}><FlightsTable filters={{ search: debouncedSearch }} /></Suspense>
             </div>
           </div>
         </div>

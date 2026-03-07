@@ -63,66 +63,122 @@ export function ShippingRatesTable({ type, filters }: ShippingRatesTableProps) {
 
   return (
     <>
-      <div className="mb-4 flex justify-end">
-        <Button onClick={() => exportRates(filteredRates, type)} variant="outline" size="sm">
+      <div className="mb-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+        {/* Placeholder for left-side controls if needed in future */}
+        <div className="flex-1"></div>
+        <Button onClick={() => exportRates(filteredRates, type)} variant="outline" size="sm" className="w-full sm:w-auto">
           <Download className="h-4 w-4 mr-2" />
           تصدير CSV
         </Button>
       </div>
-      <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="text-right">التصنيف</TableHead>
-            <TableHead className="text-right">البلد</TableHead>
-            <TableHead className="text-right">
-              {type === "AIR" ? "السعر (USD / 1 kg)" : "السعر (USD / 1 cbm)"}
-            </TableHead>
-            <TableHead className="text-right">إجراءات</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredRates.map((rate) => (
-            <TableRow key={rate.id}>
-              <TableCell className="font-medium">{rate.name}</TableCell>
-              <TableCell>
-                {(() => {
-                  switch (rate.country) {
-                    case "DUBAI": return "دبي (Dubai)";
-                    case "USA": return "أمريكا (USA)";
-                    case "TURKEY": return "تركيا (Turkey)";
-                    default: return "الصين (China)";
-                  }
-                })()}
-              </TableCell>
-              <TableCell>
-                ${rate.price} <span className="text-muted-foreground text-xs">/ {rate.type === "AIR" ? "kg" : "cbm"}</span>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <EditRateDialog rate={rate} />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(rate.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-          {filteredRates.length === 0 && (
+
+      {/* ─── Mobile Cards (< md) ─── */}
+      <div className="md:hidden flex flex-col gap-3">
+        {filteredRates.map((rate) => (
+          <div
+            key={rate.id}
+            className="rounded-xl border bg-card p-4 shadow-sm flex flex-col gap-3"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span className="font-semibold text-base">{rate.name}</span>
+              <div className="flex items-center gap-2">
+                <EditRateDialog rate={rate} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => handleDelete(rate.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <p className="text-muted-foreground text-xs">البلد</p>
+                <p className="font-medium">
+                  {(() => {
+                    switch (rate.country) {
+                      case "DUBAI": return "دبي (Dubai)";
+                      case "USA": return "أمريكا (USA)";
+                      case "TURKEY": return "تركيا (Turkey)";
+                      default: return "الصين (China)";
+                    }
+                  })()}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs">
+                  {type === "AIR" ? "السعر (USD / 1 kg)" : "السعر (USD / 1 cbm)"}
+                </p>
+                <p className="font-medium text-primary">
+                  ${rate.price} <span className="text-muted-foreground text-xs font-normal">/ {type === "AIR" ? "kg" : "cbm"}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+        {filteredRates.length === 0 && (
+          <p className="text-center text-muted-foreground py-10">لا يوجد تصنيفات</p>
+        )}
+      </div>
+
+      {/* ─── Desktop Table (≥ md) ─── */}
+      <div className="hidden md:block rounded-md border">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={4} className="text-center h-24">
-                لا يوجد تصنيفات
-              </TableCell>
+              <TableHead className="text-right">التصنيف</TableHead>
+              <TableHead className="text-right">البلد</TableHead>
+              <TableHead className="text-right">
+                {type === "AIR" ? "السعر (USD / 1 kg)" : "السعر (USD / 1 cbm)"}
+              </TableHead>
+              <TableHead className="text-right">إجراءات</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {filteredRates.map((rate) => (
+              <TableRow key={rate.id}>
+                <TableCell className="font-medium">{rate.name}</TableCell>
+                <TableCell>
+                  {(() => {
+                    switch (rate.country) {
+                      case "DUBAI": return "دبي (Dubai)";
+                      case "USA": return "أمريكا (USA)";
+                      case "TURKEY": return "تركيا (Turkey)";
+                      default: return "الصين (China)";
+                    }
+                  })()}
+                </TableCell>
+                <TableCell>
+                  ${rate.price} <span className="text-muted-foreground text-xs">/ {rate.type === "AIR" ? "kg" : "cbm"}</span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <EditRateDialog rate={rate} />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => handleDelete(rate.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filteredRates.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center h-24">
+                  لا يوجد تصنيفات
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </>
   );
 }

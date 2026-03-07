@@ -7,6 +7,7 @@ type AuthState = {
     name: string;
     email: string;
     customerId?: number | null;
+    photoUrl?: string | null;
   } | null;
   status: "idle" | "loading" | "succeeded" | "failed";
 };
@@ -26,6 +27,7 @@ const authSlice = createSlice({
       name: string;
       email: string;
       customerId?: number | null;
+      photoUrl?: string | null;
     }>) {
       state.user = action.payload;
       state.status = "succeeded";

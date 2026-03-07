@@ -41,6 +41,13 @@ export function useBarcodeScanner({ onScan, enabled = true }: UseBarcodeScanner)
                 target.tagName === "TEXTAREA" ||
                 target.isContentEditable;
 
+            // If the user is actively typing in any input field, ignore it entirely
+            // to prevent normal keyboard typing from being registered as a barcode scan.
+            if (isInputElement) {
+                clearBuffer();
+                return;
+            }
+
             const currentTime = Date.now();
             const timeDiff = currentTime - lastKeyTimeRef.current;
             lastKeyTimeRef.current = currentTime;
@@ -50,11 +57,6 @@ export function useBarcodeScanner({ onScan, enabled = true }: UseBarcodeScanner)
                 const barcode = bufferRef.current.trim();
 
                 if (barcode.length >= MIN_BARCODE_LENGTH) {
-                    // Prevent form submission if we're in an input
-                    if (isInputElement) {
-                        event.preventDefault();
-                    }
-
                     onScan(barcode);
                 }
 

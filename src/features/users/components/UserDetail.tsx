@@ -141,19 +141,19 @@ export function UserDetail({ userId }: UserDetailProps) {
   return (
     <div className="space-y-6 text-right" dir="rtl">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-card p-6 rounded-xl border shadow-sm">
-        <div className="flex items-center gap-6">
+      <div className="flex flex-col md:flex-row items-center md:items-center justify-between gap-4 bg-card p-4 md:p-6 rounded-xl border shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 w-full">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => router.back()}
-            className="hover:bg-muted"
+            className="hover:bg-muted self-start sm:self-auto shrink-0"
           >
             <ArrowRight className="h-4 w-4" />
           </Button>
           
-          <div className="flex items-center gap-4">
-            <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-border bg-muted">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-right w-full">
+            <div className="relative h-20 w-20 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-full border-2 border-border bg-muted mx-auto sm:mx-0">
               {user.photoUrl ? (
                 <Image
                   src={user.photoUrl}
@@ -168,37 +168,39 @@ export function UserDetail({ userId }: UserDetailProps) {
               )}
             </div>
 
-            <div>
-              <h1 className="text-2xl font-bold">{user.name}</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary" className="font-normal">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl md:text-2xl font-bold truncate">{user.name}</h1>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
+                <Badge variant="secondary" className="font-normal shrink-0">
                   {roleMap[user.role] || user.role}
                 </Badge>
                 {user.suspended && (
-                  <Badge variant="destructive" className="font-normal">
+                  <Badge variant="destructive" className="font-normal shrink-0">
                     حساب معلق
                   </Badge>
                 )}
-                <span className="text-sm text-muted-foreground" dir="ltr">{user.email || "لا يوجد بريد إلكتروني"}</span>              </div>
+                <span className="text-xs sm:text-sm text-muted-foreground truncate max-w-[200px] sm:max-w-none block" dir="ltr">{user.email || "لا يوجد بريد إلكتروني"}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-center sm:justify-end gap-2 w-full md:w-auto mt-2 md:mt-0">
           <EditUserDialog user={user} onSuccess={fetchUser} />
           <Button 
             variant={user.suspended ? "default" : "outline"} 
             size="sm"
             onClick={handleSuspendToggle}
-            className={user.suspended ? "bg-orange-600 hover:bg-orange-700" : ""}
+            className={`flex-1 sm:flex-none ${user.suspended ? "bg-orange-600 hover:bg-orange-700" : ""}`}
           >
             {user.suspended ? <UserCheck className="h-4 w-4 ml-2" /> : <UserX className="h-4 w-4 ml-2" />}
-            {user.suspended ? "إلغاء تعليق الحساب" : "تعليق الحساب"}
+            {user.suspended ? "إلغاء التعليق" : "تعليق الحساب"}
           </Button>
           <Button 
             variant="destructive" 
             size="sm"
             onClick={handleDelete}
+            className="flex-1 sm:flex-none"
           >
             <Trash2 className="h-4 w-4 ml-2" />
             حذف
@@ -208,46 +210,46 @@ export function UserDetail({ userId }: UserDetailProps) {
 
       {/* Tabs Navigation */}
       <Tabs defaultValue="details" className="w-full" dir="rtl">
-        <div className="flex justify-center py-4">
-          <TabsList className="bg-white rounded-lg p-1 shadow-sm border h-auto">
+        <div className="py-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <TabsList className="bg-white rounded-lg p-1 shadow-sm border h-auto w-full flex justify-start sm:justify-center overflow-x-auto hide-scrollbar">
             <TabsTrigger 
               value="details" 
-              className="rounded-md px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              className="rounded-md px-4 sm:px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap"
             >
-              <UserIcon className="h-4 w-4 mr-2" />
-              التفاصيل
+              <UserIcon className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">التفاصيل</span>
             </TabsTrigger>
             <TabsTrigger 
               value="orders" 
-              className="rounded-md px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              className="rounded-md px-4 sm:px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap"
             >
-              <Package className="h-4 w-4 mr-2" />
-              الطلبات
+              <Package className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">الطلبات</span>
             </TabsTrigger>
             {user.role === "CUSTOMER" && (
               <>
                 <TabsTrigger 
                   value="transactions" 
-                  className="rounded-md px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                  className="rounded-md px-4 sm:px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap"
                 >
-                  <Wallet className="h-4 w-4 mr-2" />
-                  المعاملات المالية
+                  <Wallet className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">المعاملات</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="reports" 
-                  className="rounded-md px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                  className="rounded-md px-4 sm:px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap"
                 >
-                  <FileText className="h-4 w-4 mr-2" />
-                  التقارير
+                  <FileText className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">التقارير</span>
                 </TabsTrigger>
               </>
             )}
             <TabsTrigger 
               value="notifications" 
-              className="rounded-md px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+              className="rounded-md px-4 sm:px-6 py-2 font-medium transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm whitespace-nowrap"
             >
-              <Bell className="h-4 w-4 mr-2" />
-              الإشعارات
+              <Bell className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">الإشعارات</span>
             </TabsTrigger>
           </TabsList>
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useReduxDispatch, useReduxSelector } from "@/redux/provider";
 import { loadOrders } from "../slices/orderSlice";
 import {
@@ -16,10 +16,16 @@ import { Badge } from "@/components/ui/badge";
 import { OrderDetailsDrawer } from "./OrderDetailsDrawer";
 import { Order } from "../slices/orderSlice";
 import { Button } from "@/components/ui/button";
-import { Download, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, MessageSquare, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import { exportToCSV } from "@/lib/exportToCSV";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface OrdersDataTableProps {
   filters?: Record<string, string | number>;
@@ -78,19 +84,28 @@ const ITEMS_PER_PAGE = 10;
 
 export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const dispatch = useReduxDispatch();
   const { list: orders, status, error } = useReduxSelector((state) => state.orders);
   const [sheetOrder, setSheetOrder] = useState<Order | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  
+  const pageParam = searchParams.get("page");
+  const currentPage = pageParam ? parseInt(pageParam, 10) : 1;
+  const sortParam = searchParams.get("sort") || "desc"; // Default desc
+  const prevFiltersRef = useRef(filters);
 
   useEffect(() => {
     dispatch(loadOrders(filters));
-  }, [dispatch, JSON.stringify(filters)]);
-
-  // Reset to page 1 when orders change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [orders.length]);
+    
+    // Only reset to page 1 if the filters ACTUALLY changed (e.g. user typed a search).
+    if (JSON.stringify(prevFiltersRef.current) !== JSON.stringify(filters)) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("page");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      prevFiltersRef.current = filters;
+    }
+  }, [dispatch, JSON.stringify(filters), searchParams, pathname, router]);
 
   if (status === "loading") {
     return <div className="text-center p-4">جاري التحميل...</div>;
@@ -100,27 +115,135 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
     return <div className="text-center text-red-500 p-4">خطأ: {error}</div>;
   }
 
+  // Sort orders
+  const sortedOrders = [...orders].sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    
+    if (dateA !== dateB) {
+      return sortParam === "asc" ? dateA - dateB : dateB - dateA;
+    }
+    
+    // If dates are exactly the same (common in seeded data), sort by ID
+    return sortParam === "asc" ? a.id - b.id : b.id - a.id;
+  });
+
   // Pagination calculations
-  const totalPages = Math.ceil(orders.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(sortedOrders.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedOrders = orders.slice(startIndex, endIndex);
+  const paginatedOrders = sortedOrders.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", page.toString());
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSortChange = (newSort: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("sort", newSort);
+    params.set("page", "1"); // Reset to page 1 on sort change
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   return (
     <>
-      <div className="flex justify-end mb-4">
-        <Button onClick={() => exportOrders(orders)} variant="outline" size="sm">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <ArrowUpDown className="h-4 w-4" />
+              {sortParam === "desc" ? "الأحدث أولاً" : "الأقدم أولاً"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleSortChange("desc")}>
+              الأحدث أولاً
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSortChange("asc")}>
+              الأقدم أولاً
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <Button onClick={() => exportOrders(sortedOrders)} variant="outline" size="sm">
           <Download className="w-4 h-4 mr-2" />
           تصدير CSV
         </Button>
       </div>
       
-      <div className="rounded-md border overflow-x-auto">
+      {/* ─── Mobile Cards (< md) ─── */}
+      <div className="md:hidden flex flex-col gap-3">
+        {paginatedOrders.map((order, index) => (
+          <div
+            key={order.id}
+            className="rounded-xl border bg-card p-4 shadow-sm flex flex-col gap-3 cursor-pointer active:scale-[0.98] transition-transform"
+            onClick={() => router.push(`/orders/${order.id}`)}
+          >
+            {/* Top row */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                <span className="font-semibold truncate text-base">{order.name}</span>
+                <span className="font-mono text-xs text-muted-foreground truncate">{order.trackingNumber}</span>
+              </div>
+              <Badge variant={order.status === "canceled" ? "destructive" : "outline"} className="shrink-0 text-xs">
+                {statusMap[order.status] || order.status}
+              </Badge>
+            </div>
+
+            {/* Details grid */}
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <p className="text-muted-foreground text-xs">العميل</p>
+                <p className="font-medium truncate">{order.customer?.user?.name || "—"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs">السعر (USD)</p>
+                <p className="font-medium">${order.usdPrice || "—"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs">بلد الشحن</p>
+                <p className="font-medium">{order.country ? (countryMap[order.country] || order.country) : "الصين"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs">تكلفة الشحن</p>
+                <p className="font-medium">{order.shippingCost ? `$${order.shippingCost}` : "—"}</p>
+              </div>
+              {(order.flight?.flightNumber || order.flightNumber) && (
+                <div>
+                  <p className="text-muted-foreground text-xs">رقم الرحلة</p>
+                  <p className="font-mono font-medium">{order.flight?.flightNumber || order.flightNumber}</p>
+                </div>
+              )}
+              {order.unreadCount && order.unreadCount > 0 ? (
+                <div className="flex items-center gap-1 text-destructive">
+                  <MessageSquare className="h-4 w-4" />
+                  <span className="font-semibold">{order.unreadCount} رسالة</span>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Action */}
+            <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSheetOrder(order)}
+              >
+                تعديل
+              </Button>
+            </div>
+          </div>
+        ))}
+        {paginatedOrders.length === 0 && (
+          <p className="text-center text-muted-foreground py-10">لا يوجد طلبات</p>
+        )}
+      </div>
+
+      {/* ─── Desktop Table (≥ md) ─── */}
+      <div className="hidden md:block rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -180,8 +303,8 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
                   )}
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => setSheetOrder(order)}
                   >
@@ -201,11 +324,12 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
         </Table>
       </div>
 
-      {/* Order count and Pagination Controls */}
-      <div className="flex items-center justify-between mt-4">
-        <div className="text-sm text-muted-foreground">
-          عرض {startIndex + 1} - {Math.min(endIndex, orders.length)} من {orders.length} طلب
-        </div>
+
+      {sortedOrders.length > 0 && (
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-sm text-muted-foreground">
+            عرض {startIndex + 1} - {Math.min(endIndex, sortedOrders.length)} من {sortedOrders.length} طلب
+          </div>
         
         {totalPages > 1 && (
           <div className="flex items-center gap-2">
@@ -277,7 +401,8 @@ export function OrdersDataTable({ filters, lastScanTime }: OrdersDataTableProps)
             </Button>
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       <OrderDetailsDrawer 
         order={sheetOrder} 

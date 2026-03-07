@@ -5,6 +5,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 import { AuthHydrator } from "@/components/auth-hydrator"
+import { PageLoadingOverlay } from "@/components/page-loading-overlay"
 
 export default function DashboardLayout({
   children,
@@ -22,7 +23,8 @@ export default function DashboardLayout({
     >
       <AuthHydrator />
       <AppSidebar variant="inset" />
-      <SidebarInset>
+      <SidebarInset className="relative">
+        <PageLoadingOverlay />
         <SiteHeader />
         {children}
       </SidebarInset>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 
 import { OrdersDataTable } from "@/features/orders/components/OrdersDataTable"
 
@@ -113,18 +113,18 @@ export default function Page() {
                 <CreateOrderDialog />
               </div>
 
-              <div className="flex gap-2">
-                <div className="relative flex-1">
+              <div className="flex flex-wrap gap-2">
+                <div className="relative flex-1 min-w-[200px]">
                   <Search className={`absolute right-2.5 top-2.5 h-4 w-4 ${isSearching ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
                   <Input
-                    placeholder="بحث برقم التتبع، اسم العميل، اسم الطلب، أو رقم الرحلة..."
+                    placeholder="بحث برقم التتبع، اسم العميل..."
                     className="pr-8"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue placeholder="جميع الحالات" />
                   </SelectTrigger>
                   <SelectContent>
@@ -139,7 +139,7 @@ export default function Page() {
                   </SelectContent>
                 </Select>
                 <Select value={countryFilter} onValueChange={setCountryFilter}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue placeholder="جميع المناطق" />
                   </SelectTrigger>
                   <SelectContent>
@@ -160,7 +160,7 @@ export default function Page() {
                 </Button>
               </div>
 
-              <OrdersDataTable filters={filters} lastScanTime={lastScanTime} />
+              <Suspense fallback={null}><OrdersDataTable filters={filters} lastScanTime={lastScanTime} /></Suspense>
             </div>
           </div>
         </div>
