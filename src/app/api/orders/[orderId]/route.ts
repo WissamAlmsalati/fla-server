@@ -211,9 +211,10 @@ export async function PATCH(
                   }
                 });
 
-                if (customerUser.fcmTokens && customerUser.fcmTokens.length > 0) {
+                const custTokens = (Array.isArray(customerUser.fcmTokens) ? customerUser.fcmTokens : []) as string[];
+                if (custTokens.length > 0) {
                   await sendNotificationToUser(
-                    customerUser.fcmTokens,
+                    custTokens,
                     title,
                     notifBody,
                     {
@@ -292,9 +293,10 @@ export async function PATCH(
       });
 
       // 2. Send Push Notification if tokens exist
-      if (orderWithCustomer.customer.user.fcmTokens?.length) {
+      const userTokens = (Array.isArray(orderWithCustomer.customer.user.fcmTokens) ? orderWithCustomer.customer.user.fcmTokens : []) as string[];
+      if (userTokens.length > 0) {
         await sendNotificationToUser(
-          orderWithCustomer.customer.user.fcmTokens,
+          userTokens,
           title,
           body,
           {

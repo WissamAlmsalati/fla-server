@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -21,7 +21,7 @@ model User {
   suspended    Boolean        @default(false)
   createdAt    DateTime       @default(now())
   approved     Boolean        @default(true)
-  fcmTokens    String[]       @default([])
+  fcmTokens    Json           @default("[]")
   location     String?
   customer     Customer?
   messages     OrderMessage[]
@@ -116,7 +116,7 @@ model OrderMessage {
   content   String
   createdAt DateTime       @default(now())
   imageUrl  String?
-  readBy    Int[]          @default([])
+  readBy    Json           @default("[]")
   replyToId Int?
   author    User           @relation(fields: [authorId], references: [id])
   order     Order          @relation(fields: [orderId], references: [id])
@@ -252,7 +252,7 @@ model PasswordResetCode {
 
 model SiteSettings {
   key       String   @id
-  value     String
+  value     String   @db.LongText
   updatedAt DateTime @updatedAt
 }
 
@@ -262,7 +262,7 @@ model SettingsChangeLog {
   changedById   Int
   changedByName String
   note          String?
-  diffSummary   String?
-  snapshot      String?
+  diffSummary   String? @db.Text
+  snapshot      String? @db.LongText
   createdAt     DateTime @default(now())
 }

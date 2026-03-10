@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
               authorId: { not: user.sub },
               NOT: {
                 readBy: {
-                  has: user.sub,
+                  array_contains: user.sub,
                 },
               },
             },
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
             authorId: { not: user.sub },
             NOT: {
               readBy: {
-                has: user.sub,
+                array_contains: user.sub,
               },
             },
           },
@@ -237,9 +237,10 @@ export async function POST(request: Request) {
               }
             });
 
-            if (customerUser.fcmTokens && customerUser.fcmTokens.length > 0) {
+            const custTokens = (Array.isArray(customerUser.fcmTokens) ? customerUser.fcmTokens : []) as string[];
+            if (custTokens.length > 0) {
               await sendNotificationToUser(
-                customerUser.fcmTokens,
+                custTokens,
                 title,
                 notifBody,
                 {
@@ -279,9 +280,10 @@ export async function POST(request: Request) {
         });
 
         // Push notification if FCM tokens exist
-        if (customerUser.user.fcmTokens?.length) {
+        const custTokens = (Array.isArray(customerUser.user.fcmTokens) ? customerUser.user.fcmTokens : []) as string[];
+        if (custTokens.length > 0) {
           await sendNotificationToUser(
-            customerUser.user.fcmTokens,
+            custTokens,
             title,
             notifBody,
             {

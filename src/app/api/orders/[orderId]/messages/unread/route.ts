@@ -11,7 +11,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ orde
             where: {
                 orderId: Number(orderId),
                 authorId: { not: user.sub },
-                readBy: { hasEvery: [user.sub] },
+                readBy: { array_contains: user.sub },
             },
         });
 

@@ -40,16 +40,17 @@ export async function POST(request: Request) {
     // Add FCM token if not exists
     if (payload.fcmToken) {
       console.log(`[LOGIN TRACE] Received FCM token in login payload for user ${user.id}:`, payload.fcmToken);
-      if (!user.fcmTokens?.includes(payload.fcmToken)) {
+      const currentTokens = (Array.isArray(user.fcmTokens) ? user.fcmTokens : []) as string[];
+      if (!currentTokens.includes(payload.fcmToken)) {
         console.log(`[LOGIN TRACE] Saving NEW FCM token to user ${user.id} database.`);
+        const newTokens = [...currentTokens, payload.fcmToken];
         await prisma.user.update({
           where: { id: user.id },
           data: {
-            fcmTokens: {
-              push: payload.fcmToken
-            }
+            fcmTokens: newTokens
           }
         });
+        user.fcmTokens = newTokens;
       } else {
         console.log(`[LOGIN TRACE] FCM token already exists for user ${user.id}.`);
       }
@@ -57,7 +58,8 @@ export async function POST(request: Request) {
       console.log(`[LOGIN TRACE] NO FCM token provided in login payload for user ${user.id}.`);
     }
 
-    console.log(`[LOGIN TRACE] User ${user.id} currently has ${user.fcmTokens?.length || 0} FCM tokens saved in DB.`);
+    const currentTokensFinal = (Array.isArray(user.fcmTokens) ? user.fcmTokens : []) as string[];
+    console.log(`[LOGIN TRACE] User ${user.id} currently has ${currentTokensFinal.length} FCM tokens saved in DB.`);
     const accessToken = signAccessToken({
       sub: user.id,
       role: user.role,
@@ -90,8 +92,8 @@ export async function POST(request: Request) {
         dubaiCode: user.customer?.dubaiCode,
         usaCode: user.customer?.usaCode,
         turkeyCode: user.customer?.turkeyCode,
-        hasFcmToken: user.fcmTokens && user.fcmTokens.length > 0,
-        fcmTokens: user.fcmTokens,
+        hasFcmToken: Array.isArray(user.fcmTokens) && user.fcmTokens.length > 0,
+        fcmTokens: Array.isArray(user.fcmTokens) ? user.fcmTokens : [],
         photoUrl: user.photoUrl,
       }
     });

@@ -137,9 +137,10 @@ export async function POST(request: NextRequest) {
                     }
                 });
 
-                if (customerUser.user.fcmTokens && customerUser.user.fcmTokens.length > 0) {
+                const userTokens = (Array.isArray(customerUser.user.fcmTokens) ? customerUser.user.fcmTokens : []) as string[];
+                if (userTokens.length > 0) {
                     await sendNotificationToUser(
-                        customerUser.user.fcmTokens,
+                        userTokens,
                         title,
                         notifBody,
                         {

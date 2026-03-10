@@ -23,9 +23,9 @@ export async function POST(request: Request) {
         }
 
         // Add token if it doesn't already exist
-        let newTokens = dbUser.fcmTokens;
+        let newTokens = (Array.isArray(dbUser.fcmTokens) ? dbUser.fcmTokens : []) as string[];
         if (!newTokens.includes(fcmToken)) {
-            newTokens.push(fcmToken);
+            newTokens = [...newTokens, fcmToken];
 
             await prisma.user.update({
                 where: { id: user.sub },

@@ -36,9 +36,10 @@ export async function POST(request: Request) {
             let sendStatus: any = null;
             let firebaseSent = false;
             const targetUser = await prisma.user.findUnique({ where: { id: parseInt(userId) } });
+            const userTokens = targetUser ? (Array.isArray(targetUser.fcmTokens) ? targetUser.fcmTokens : []) as string[] : [];
 
-            if (targetUser && targetUser.fcmTokens.length > 0) {
-                sendStatus = await sendNotificationToUser(targetUser.fcmTokens, title, content, { type: type || 'SYSTEM', notificationId: String(notification.id) });
+            if (targetUser && userTokens.length > 0) {
+                sendStatus = await sendNotificationToUser(userTokens, title, content, { type: type || 'SYSTEM', notificationId: String(notification.id) });
                 if (sendStatus?.success && !sendStatus?.simulated) {
                     firebaseSent = true;
                 }
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
             // 2. Push via FCM
             let sendStatus: any = null;
             let firebaseSent = false;
-            const allTokens = allUsers.flatMap(u => u.fcmTokens);
+            const allTokens = allUsers.flatMap(u => (Array.isArray(u.fcmTokens) ? u.fcmTokens : []) as string[]);
             if (allTokens.length > 0) {
                 sendStatus = await sendNotificationToUser(allTokens, title, content, { type: type || 'SYSTEM', notificationId: String(globalLog.id) });
                 if (sendStatus?.success && !sendStatus?.simulated) {
