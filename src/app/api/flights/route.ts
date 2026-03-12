@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
         const where: any = {};
         if (search) {
-            where.flightNumber = { contains: search, mode: "insensitive" };
+            where.flightNumber = { contains: search };
         }
 
         const flights = await prisma.flight.findMany({

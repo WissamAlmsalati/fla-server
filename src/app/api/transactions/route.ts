@@ -233,7 +233,7 @@ export async function GET(request: NextRequest) {
 
         const search = searchParams.get("search");
         if (search) {
-            where.notes = { contains: search, mode: "insensitive" };
+            where.notes = { contains: search };
         }
 
         const limit = parseInt(searchParams.get("limit") || "20");

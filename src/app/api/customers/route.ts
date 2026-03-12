@@ -29,14 +29,14 @@ export async function GET(request: Request) {
     const where: any = {};
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { code: { contains: search, mode: "insensitive" } },
+        { name: { contains: search } },
+        { code: { contains: search } },
         {
           user: {
             OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { email: { contains: search, mode: "insensitive" } },
-              { mobile: { contains: search, mode: "insensitive" } },
+              { name: { contains: search } },
+              { email: { contains: search } },
+              { mobile: { contains: search } },
             ]
           }
         }

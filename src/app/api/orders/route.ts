@@ -82,15 +82,15 @@ export async function GET(request: NextRequest) {
       }
 
       where.OR = [
-        { trackingNumber: { contains: query.search, mode: "insensitive" } },
-        { flightNumber: { contains: query.search, mode: "insensitive" } },
-        { name: { contains: query.search, mode: "insensitive" } },
+        { trackingNumber: { contains: query.search } },
+        { flightNumber: { contains: query.search } },
+        { name: { contains: query.search } },
         {
           customer: {
             OR: [
-              { name: { contains: query.search, mode: "insensitive" } },
-              { code: { contains: query.search, mode: "insensitive" } },
-              { user: { name: { contains: query.search, mode: "insensitive" } } },
+              { name: { contains: query.search } },
+              { code: { contains: query.search } },
+              { user: { name: { contains: query.search } } },
             ],
           },
         },

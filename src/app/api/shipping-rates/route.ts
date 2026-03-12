@@ -20,8 +20,8 @@ export async function GET(request: Request) {
     const where: any = {};
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { type: { contains: search, mode: "insensitive" } },
+        { name: { contains: search } },
+        { type: { contains: search } },
       ];
     }
     if (country) {

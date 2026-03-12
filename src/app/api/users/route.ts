@@ -48,14 +48,14 @@ export async function GET(request: Request) {
     }
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-        { mobile: { contains: search, mode: "insensitive" } },
+        { name: { contains: search } },
+        { email: { contains: search } },
+        { mobile: { contains: search } },
         {
           customer: {
             OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { code: { contains: search, mode: "insensitive" } },
+              { name: { contains: search } },
+              { code: { contains: search } },
             ]
           }
         }
