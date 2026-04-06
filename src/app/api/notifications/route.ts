@@ -90,7 +90,7 @@ export async function POST(request: Request) {
 
             // 4. Create individual records for ALL users so read-receipts work independently
             await prisma.notification.createMany({
-                data: allUsers.map(u => ({
+                data: allUsers.map((u: any) => ({
                     title,
                     body: content,
                     userId: u.id,
