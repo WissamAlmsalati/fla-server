@@ -71,7 +71,7 @@ export async function POST(request: Request) {
             // 2. Push via FCM
             let sendStatus: any = null;
             let firebaseSent = false;
-            const allTokens = allUsers.flatMap(u => (Array.isArray(u.fcmTokens) ? u.fcmTokens : []) as string[]);
+            const allTokens = allUsers.flatMap((u: any) => (Array.isArray(u.fcmTokens) ? u.fcmTokens : []) as string[]);
             if (allTokens.length > 0) {
                 sendStatus = await sendNotificationToUser(allTokens, title, content, { type: type || 'SYSTEM', notificationId: String(globalLog.id) });
                 if (sendStatus?.success && !sendStatus?.simulated) {
