@@ -239,7 +239,7 @@ export async function POST(request: Request) {
 
             const custTokens = (Array.isArray(customerUser.fcmTokens) ? customerUser.fcmTokens : []) as string[];
             if (custTokens.length > 0) {
-              await sendNotificationToUser(
+              const sendStatus = await sendNotificationToUser(
                 custTokens,
                 title,
                 notifBody,
@@ -249,6 +249,14 @@ export async function POST(request: Request) {
                   notificationId: String(dbNotification.id)
                 }
               );
+
+              // Update notification with firebaseSent status
+              if (sendStatus.success && !sendStatus.simulated) {
+                await tx.notification.update({
+                  where: { id: dbNotification.id },
+                  data: { firebaseSent: true }
+                });
+              }
             }
           }
         }
@@ -282,7 +290,7 @@ export async function POST(request: Request) {
         // Push notification if FCM tokens exist
         const custTokens = (Array.isArray(customerUser.user.fcmTokens) ? customerUser.user.fcmTokens : []) as string[];
         if (custTokens.length > 0) {
-          await sendNotificationToUser(
+          const sendStatus = await sendNotificationToUser(
             custTokens,
             title,
             notifBody,
@@ -292,6 +300,14 @@ export async function POST(request: Request) {
               notificationId: String(dbNotification.id),
             }
           );
+
+          // Update notification with firebaseSent status
+          if (sendStatus.success && !sendStatus.simulated) {
+            await prisma.notification.update({
+              where: { id: dbNotification.id },
+              data: { firebaseSent: true }
+            });
+          }
         }
       }
     }

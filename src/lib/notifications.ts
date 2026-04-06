@@ -6,13 +6,16 @@ export async function sendNotificationToUser(
     body: string,
     data?: Record<string, string>
 ) {
-    if (!firebaseAdmin || fcmTokens.length === 0) {
+    if (!firebaseAdmin || !firebaseAdmin.apps?.length || fcmTokens.length === 0) {
         console.log(`[MOCK NOTIFICATION] To ${fcmTokens.length} tokens. Title: ${title}`);
-        return { simulated: true, success: true, message: "Firebase not initialized or no tokens. Simulated push." };
+        return { 
+            simulated: true, 
+            success: true, 
+            message: !fcmTokens.length ? "No tokens provided" : "Firebase not initialized. Simulated push." 
+        };
     }
 
     try {
-        // Temporary workaround for Next.js fetch concurrency bug dropping Authorization headers
         const responses = [];
         let successCount = 0;
         let failureCount = 0;
@@ -31,9 +34,10 @@ export async function sendNotificationToUser(
                 responses.push({ success: true, messageId });
                 successCount++;
             } catch (err: any) {
-                responses.push({ success: false, error: err });
+                const errorCode = err.code || 'unknown';
+                responses.push({ success: false, error: err.message, code: errorCode });
                 failureCount++;
-                console.warn(`Failed to send notification to token ${token}:`, err.message || err);
+                console.warn(`Failed to send notification to token ${token.substring(0, 10)}...: ${errorCode} - ${err.message}`);
             }
         }
 
@@ -43,9 +47,13 @@ export async function sendNotificationToUser(
             failureCount,
         };
 
-        return { simulated: false, success: true, response };
+        // Consider it a success if at least one notification was sent successfully
+        // OR if there were no failures (though this case shouldn't happen if fcmTokens.length > 0)
+        const overallSuccess = successCount > 0 || failureCount === 0;
+
+        return { simulated: false, success: overallSuccess, response };
     } catch (error: any) {
-        console.error('Error sending notification:', error);
+        console.error('Critical error in sendNotificationToUser:', error);
         return { simulated: false, success: false, error: error.message };
     }
 }

@@ -76,6 +76,7 @@ const content = {
       phone: "+218 92‑1911999",
       email: "info@fll.com.ly",
       rights: "© 2026 شركة الولاء الدائم. جميع الحقوق محفوظة.",
+     
     },
   },
   en: {
@@ -146,6 +147,7 @@ const content = {
       phone: "+218 92‑1911999",
       email: "info@fll.com.ly",
       rights: "© 2026 Alwala International Shipping. All rights reserved.",
+      credit: "Developed by OctoBits — www.octobits.ly",
     },
   },
 };
@@ -474,6 +476,16 @@ export default function LandingPage() {
         </div>
         <div className="lp-footer__bottom">
           <p>{c.footer.rights}</p>
+          <div className="lp-footer__credit-wrapper">
+             <div className="lp-footer__credit">
+               <span className="lp-footer__credit-label">
+                 {lang === 'ar' ? 'طور بواسطة' : 'Developed by'}
+               </span>
+               <a href="https:/octobits.ly" target="_blank" rel="noopener noreferrer" className="lp-footer__credit-link">
+                 OctoBits
+               </a>
+             </div>
+          </div>
         </div>
       </footer>
     </div>
@@ -640,7 +652,17 @@ const css = `
 .lp-footer__col-h { font-size: 14px; font-weight: 800; color: var(--white); margin-bottom: 4px; }
 .lp-footer__col a { color: rgba(255,255,255,.5); font-size: 14px; text-decoration: none; line-height: 1.9; transition: color .2s; }
 .lp-footer__col a:hover { color: var(--gold); }
-.lp-footer__bottom { border-top: 1px solid rgba(255,255,255,.07); padding: 20px 24px; text-align: center; font-size: 13px; color: rgba(255,255,255,.25); }
+.lp-footer__bottom { border-top: 1px solid rgba(255,255,255,.07); padding: 40px 24px; text-align: center; font-size: 13px; color: rgba(255,255,255,.25); display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.lp-footer__credit-wrapper { perspective: 1000px; }
+.lp-footer__credit { display: inline-flex; align-items: center; gap: 12px; padding: 10px 24px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 100px; font-size: 13px; backdrop-filter: blur(12px); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: default; }
+.lp-footer__credit:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(245, 158, 11, 0.4); transform: translateY(-4px) scale(1.02); box-shadow: 0 15px 30px rgba(0,0,0,0.3), 0 0 20px rgba(245, 158, 11, 0.1); }
+.lp-footer__credit-label { color: rgba(255, 255, 255, 0.4); font-weight: 400; }
+.lp-footer__credit-link { font-weight: 800; text-decoration: none; background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.5px; position: relative; }
+.lp-footer__credit-link::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 1px; background: linear-gradient(90deg, #f59e0b, #fbbf24); transition: width 0.3s ease; }
+.lp-footer__credit-link:hover::after { width: 100%; }
+.lp-footer__credit-divider { color: rgba(255, 255, 255, 0.1); margin: 0 4px; }
+.lp-footer__credit-url { color: rgba(255, 255, 255, 0.5); text-decoration: none; font-family: 'Inter', sans-serif; font-size: 12px; transition: color 0.3s ease; }
+.lp-footer__credit-url:hover { color: var(--white); }
 
 /* RESPONSIVE */
 @media (max-width: 1024px) {

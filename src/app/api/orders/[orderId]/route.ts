@@ -213,16 +213,24 @@ export async function PATCH(
 
                 const custTokens = (Array.isArray(customerUser.fcmTokens) ? customerUser.fcmTokens : []) as string[];
                 if (custTokens.length > 0) {
-                  await sendNotificationToUser(
-                    custTokens,
-                    title,
-                    notifBody,
-                    {
-                      type: "wallet_update",
-                      transactionId: String(withdrawalTransaction.id),
-                      notificationId: String(dbNotification.id)
-                    }
-                  );
+                   const sendStatus = await sendNotificationToUser(
+                     custTokens,
+                     title,
+                     notifBody,
+                     {
+                       type: "wallet_update",
+                       transactionId: String(withdrawalTransaction.id),
+                       notificationId: String(dbNotification.id)
+                     }
+                   );
+
+                   // Update notification with firebaseSent status
+                   if (sendStatus.success && !sendStatus.simulated) {
+                     await tx.notification.update({
+                       where: { id: dbNotification.id },
+                       data: { firebaseSent: true }
+                     });
+                   }
                 }
               }
             }
@@ -295,16 +303,24 @@ export async function PATCH(
       // 2. Send Push Notification if tokens exist
       const userTokens = (Array.isArray(orderWithCustomer.customer.user.fcmTokens) ? orderWithCustomer.customer.user.fcmTokens : []) as string[];
       if (userTokens.length > 0) {
-        await sendNotificationToUser(
-          userTokens,
-          title,
-          body,
-          {
-            orderId: updatedOrder.id.toString(),
-            type: "status_update",
-            notificationId: String(dbNotification.id)
-          }
-        );
+         const sendStatus = await sendNotificationToUser(
+           userTokens,
+           title,
+           body,
+           {
+             orderId: updatedOrder.id.toString(),
+             type: "status_update",
+             notificationId: String(dbNotification.id)
+           }
+         );
+
+         // Update notification with firebaseSent status
+         if (sendStatus.success && !sendStatus.simulated) {
+           await prisma.notification.update({
+             where: { id: dbNotification.id },
+             data: { firebaseSent: true }
+           });
+         }
       }
     }
 
