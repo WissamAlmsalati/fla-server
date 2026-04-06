@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -32,7 +32,7 @@ async function seedCustomers() {
                     email,
                     mobile,
                     passwordHash,
-                    role: Role.CUSTOMER,
+                    role: "CUSTOMER",
                     approved: true,
                 }
             });
