@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     const customerCode = firstOrder.customer?.code || "unknown";
     const customerName = firstOrder.customer?.name || firstOrder.customer?.user?.name || "Unknown";
 
-    const orderRowsHtml = orders.map(order => `
+    const orderRowsHtml = orders.map((order: any) => `
       <tr>
         <td style="font-family: monospace;">${order.trackingNumber}</td>
         <td>
@@ -376,11 +376,11 @@ export async function POST(request: Request) {
           </table>
 
           <!-- Order Timelines (Steppers) -->
-          ${orders.map(order => order.logs && order.logs.length > 0 ? `
+          ${orders.map((order: any) => order.logs && order.logs.length > 0 ? `
             <div class="timeline-section page-break">
               <h3 class="section-title">سجل حالة الطلب (${order.trackingNumber}) / Order History</h3>
               <ul class="timeline">
-                ${order.logs.map(log => `
+                ${order.logs.map((log: any) => `
                   <li class="timeline-item">
                     <div class="timeline-point"></div>
                     <div class="timeline-content">

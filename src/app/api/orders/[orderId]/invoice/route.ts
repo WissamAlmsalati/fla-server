@@ -408,7 +408,7 @@ export async function GET(
             <div class="timeline-section page-break">
               <h3 class="section-title">سجل حالة الطلب / Order History</h3>
               <ul class="timeline">
-                ${order.logs.map(log => `
+                ${order.logs.map((log: any) => `
                   <li class="timeline-item">
                     <div class="timeline-point"></div>
                     <div class="timeline-content">

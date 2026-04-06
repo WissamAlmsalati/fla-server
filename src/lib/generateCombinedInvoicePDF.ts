@@ -237,7 +237,7 @@ export const generateCombinedInvoicePDF = async (orders: Order[], customerName: 
             </tr>
           </thead>
           <tbody>
-            ${orders.map(order => `
+            ${orders.map((order: any) => `
               <tr>
                 <td style="font-family: monospace;">${order.trackingNumber}</td>
                 <td>${order.name}</td>
