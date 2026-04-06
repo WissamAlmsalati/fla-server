@@ -101,14 +101,14 @@ export async function POST(request: Request) {
       httpOnly: true,
       path: "/",
       maxAge: 60 * 60 * 24, // 1 day in seconds
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Set to false to support HTTP deployments (IP addresses)
       sameSite: "lax",
     });
     response.cookies.set("refresh_token", refreshToken, {
       httpOnly: true,
       path: "/api/auth/refresh",
       maxAge: 60 * 60 * 24 * 7,
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Set to false to support HTTP deployments (IP addresses)
       sameSite: "lax",
     });
     return response;

@@ -146,8 +146,9 @@ export async function GET(request: NextRequest) {
       data: ordersWithUnreadCounts,
       meta: parsePaginationMeta(orders, query.limit),
     });
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status: 400 });
+  } catch (error: any) {
+    const status = error.status || 400;
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Unknown error" }, { status });
   }
 }
 
