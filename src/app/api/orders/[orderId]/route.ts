@@ -118,9 +118,86 @@ export async function PATCH(
         "delivered"
       ];
 
-      // 2. If changing TO canceled, allow it from any status
-      if (data.status === "canceled") {
-        // Allow transition to canceled
+      // 2. If changing TO canceled, refund customer
+      if (data.status === "canceled" && order.status !== "canceled") {
+        // Calculate total refund (order price + shipping cost if paid)
+        const orderPrice = order.usdPrice || 0;
+        const shippingCost = order.shippingCost || 0;
+        const totalRefund = orderPrice + shippingCost;
+
+        if (totalRefund > 0 && order.customerId) {
+          // Get customer for balance update
+          const customer = await tx.customer.findUnique({
+            where: { id: order.customerId },
+          });
+
+          if (customer) {
+            const balanceBefore = customer.balanceUSD;
+            const balanceAfter = balanceBefore + totalRefund;
+
+            // Refund to customer wallet
+            await tx.customer.update({
+              where: { id: order.customerId },
+              data: {
+                balanceUSD: { increment: totalRefund },
+              },
+            });
+
+            // Create refund transaction record
+            const refundTransaction = await tx.transaction.create({
+              data: {
+                customerId: order.customerId,
+                type: "DEPOSIT",
+                amount: totalRefund,
+                currency: "USD",
+                balanceBefore: balanceBefore,
+                balanceAfter: balanceAfter,
+                notes: `استرجاع مبلغ الطلب الملغي - ${order.name} (#${order.trackingNumber})`,
+                createdBy: user.sub,
+              },
+            });
+
+            // Send refund notification
+            const customerUser = await tx.user.findUnique({
+              where: { id: customer.userId as number }
+            });
+
+            if (customerUser) {
+              const title = "استرجاع مبلغ إلى المحفظة";
+              const notifBody = `تم استرجاع مبلغ ${totalRefund}$ إلى محفظتك بسبب إلغاء الطلب "${order.name}". الرصيد الحالي: ${balanceAfter}$`;
+
+              const dbNotification = await tx.notification.create({
+                data: {
+                  title,
+                  body: notifBody,
+                  userId: customerUser.id as number,
+                  type: "WALLET_UPDATE",
+                }
+              });
+
+              const custTokens = (Array.isArray(customerUser.fcmTokens) ? customerUser.fcmTokens : []) as string[];
+              if (custTokens.length > 0) {
+                 const sendStatus = await sendNotificationToUser(
+                   custTokens,
+                   title,
+                   notifBody,
+                   {
+                     type: "wallet_update",
+                     transactionId: String(refundTransaction.id),
+                     notificationId: String(dbNotification.id)
+                   }
+                 );
+
+                 if (sendStatus.success && !sendStatus.simulated) {
+                   await tx.notification.update({
+                     where: { id: dbNotification.id },
+                     data: { firebaseSent: true }
+                   });
+                 }
+              }
+            }
+          }
+        }
       } else {
         const currentStatusIndex = STATUS_ORDER.indexOf(order.status);
         const newStatusIndex = data.status ? STATUS_ORDER.indexOf(data.status) : currentStatusIndex;
