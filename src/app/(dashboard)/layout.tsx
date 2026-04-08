@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/sidebar"
 import { AuthHydrator } from "@/components/auth-hydrator"
 import { PageLoadingOverlay } from "@/components/page-loading-overlay"
+import { FirebaseNotifications } from "@/components/firebase-notifications"
 
 export default function DashboardLayout({
   children,
@@ -22,6 +23,7 @@ export default function DashboardLayout({
       }
     >
       <AuthHydrator />
+      <FirebaseNotifications />
       <AppSidebar variant="inset" />
       <SidebarInset className="relative">
         <PageLoadingOverlay />

@@ -39,7 +39,7 @@ export async function POST(request: Request) {
             const userTokens = targetUser ? (Array.isArray(targetUser.fcmTokens) ? targetUser.fcmTokens : []) as string[] : [];
 
             if (targetUser && userTokens.length > 0) {
-                sendStatus = await sendNotificationToUser(userTokens, title, content, { type: type || 'SYSTEM', notificationId: String(notification.id) });
+                sendStatus = await sendNotificationToUser(userTokens, title, content, { type: type || 'SYSTEM', notificationId: String(notification.id) }, targetUser.id);
                 if (sendStatus?.success && !sendStatus?.simulated) {
                     firebaseSent = true;
                 }
@@ -118,13 +118,14 @@ export async function GET(request: Request) {
 
         let whereClause: any = { userId: user.sub };
 
-        // If requested by the admin page, show only the global logs and specific sent notifications
-        if (adminView && user.role === 'ADMIN') {
-            whereClause = {}; // We might filter this better, but for now we'll fetch global logs via the UI
+        // If requested by the admin/staff page, show global logs and chat messages for this user
+        const staffRoles = ['ADMIN', 'PURCHASE_OFFICER', 'CHINA_WAREHOUSE', 'LIBYA_WAREHOUSE'];
+        if (adminView && staffRoles.includes(user.role)) {
             const notifications = await prisma.notification.findMany({
                 where: {
                     OR: [
                         { userId: null }, // Global logs
+                        { userId: user.sub, type: 'CHAT_MESSAGE' }, // Chat messages for this staff member
                     ],
                 },
                 orderBy: { createdAt: 'desc' },

@@ -44,6 +44,7 @@ function LoadingBar() {
       <div
         className="fixed top-0 left-0 z-[9999] h-[3px] bg-primary transition-all duration-300 ease-out shadow-[0_0_8px] shadow-primary/60"
         style={{ width: `${progress}%`, opacity: loading || progress > 0 ? 1 : 0 }}
+        suppressHydrationWarning
       />
       {/* Subtle content overlay */}
       {loading && (
