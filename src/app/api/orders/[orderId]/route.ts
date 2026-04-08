@@ -119,7 +119,7 @@ export async function PATCH(
       ];
 
       // 2. If changing TO canceled, refund customer
-      if (data.status === "canceled" && order.status !== "canceled") {
+      if (data.status === "canceled" && (order.status as any) !== "canceled") {
         // Calculate total refund (order price + shipping cost if paid)
         const orderPrice = order.usdPrice || 0;
         const shippingCost = order.shippingCost || 0;
