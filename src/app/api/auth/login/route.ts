@@ -34,7 +34,25 @@ export async function POST(request: Request) {
       },
       include: { customer: true }
     });
-    if (!user || payload.password !== user.passwordHash) {
+
+    let isPasswordValid = false;
+    if (user) {
+      if (payload.password === user.passwordHash) {
+        isPasswordValid = true;
+      } else {
+        const isPasswordNumeric = /^\d+$/.test(payload.password);
+        if (isPasswordNumeric) {
+          const alternatePassword = payload.password.startsWith('0') 
+            ? payload.password.substring(1) 
+            : `0${payload.password}`;
+          if (alternatePassword === user.passwordHash) {
+            isPasswordValid = true;
+          }
+        }
+      }
+    }
+
+    if (!user || !isPasswordValid) {
       return NextResponse.json({ error: "البريد الإلكتروني أو رقم الهاتف أو كلمة المرور غير صحيحة" }, { status: 401 });
     }
 
