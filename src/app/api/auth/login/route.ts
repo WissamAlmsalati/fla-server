@@ -14,12 +14,23 @@ export async function POST(request: Request) {
     const body = await request.json();
     const payload = loginSchema.parse(body);
     // Look up by email OR mobile number
+    const isNumeric = /^\d+$/.test(payload.email);
+    const alternateMobile = isNumeric 
+      ? (payload.email.startsWith('0') ? payload.email.substring(1) : `0${payload.email}`)
+      : undefined;
+
+    const orConditions: any[] = [
+      { email: payload.email },
+      { mobile: payload.email },
+    ];
+
+    if (alternateMobile) {
+      orConditions.push({ mobile: alternateMobile });
+    }
+
     const user = await prisma.user.findFirst({
       where: {
-        OR: [
-          { email: payload.email },
-          { mobile: payload.email },
-        ],
+        OR: orConditions,
       },
       include: { customer: true }
     });
