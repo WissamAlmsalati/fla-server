@@ -19,6 +19,9 @@ services:
     restart: always
     ports:
       - '3000:3000'
+    volumes:
+      - ./public/uploads:/app/public/uploads
+      - ./public/photos:/app/public/photos
     env_file:
       - .env
     environment:
