@@ -43,6 +43,7 @@ export async function PATCH(
             name: true,
             email: true,
             mobile: true,
+            location: true,
             photoUrl: true,
             passportUrl: true,
             role: true,

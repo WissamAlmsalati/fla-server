@@ -54,3 +54,43 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: "حدث خطأ أثناء تحديث الملف الشخصي" }, { status: 500 });
     }
 }
+
+export async function GET(request: Request) {
+    try {
+        const payload = await requireAuth(request);
+
+        if (!payload?.sub) {
+            return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+        }
+
+        const userId = typeof payload.sub === 'string' ? parseInt(payload.sub as string) : (payload.sub as number);
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: { customer: true }
+        });
+
+        if (!user) {
+            return NextResponse.json({ error: "المستخدم غير موجود" }, { status: 404 });
+        }
+
+        return NextResponse.json({
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                location: user.location,
+                customerId: user.customerId,
+                code: user.customer?.code,
+                dubaiCode: user.customer?.dubaiCode,
+                usaCode: user.customer?.usaCode,
+                turkeyCode: user.customer?.turkeyCode,
+            }
+        });
+
+    } catch (error) {
+        console.error("Profile fetch error:", error);
+        return NextResponse.json({ error: "حدث خطأ أثناء جلب الملف الشخصي" }, { status: 500 });
+    }
+}

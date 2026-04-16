@@ -116,6 +116,7 @@ export async function POST(request: Request) {
         name: user.name,
         email: user.email,
         role: user.role,
+        location: user.location,
         customerId: user.customerId,
         code: user.customer?.code,
         dubaiCode: user.customer?.dubaiCode,
@@ -129,7 +130,7 @@ export async function POST(request: Request) {
     response.cookies.set("access_token", accessToken, {
       httpOnly: true,
       path: "/",
-      maxAge: 60 * 60 * 24, // 1 day in seconds
+      maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
       secure: false, // Set to false to support HTTP deployments (IP addresses)
       sameSite: "lax",
     });

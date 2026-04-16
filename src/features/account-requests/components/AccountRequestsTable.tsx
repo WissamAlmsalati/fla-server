@@ -37,6 +37,7 @@ interface AccountRequest {
   name: string;
   email: string;
   mobile: string | null;
+  location: string | null;
   role: string;
   approved: boolean;
   suspended: boolean;
@@ -123,6 +124,7 @@ export function AccountRequestsTable() {
               <TableHead className="text-right">الاسم</TableHead>
               <TableHead className="text-right">البريد الإلكتروني</TableHead>
               <TableHead className="text-right">رقم الهاتف</TableHead>
+              <TableHead className="text-right">الموقع / المدينة</TableHead>
               <TableHead className="text-right">كود الشحن</TableHead>
               <TableHead className="text-right">تاريخ التسجيل</TableHead>
               <TableHead className="text-right">إجراءات</TableHead>
@@ -134,6 +136,7 @@ export function AccountRequestsTable() {
                 <TableCell className="font-medium">{account.name}</TableCell>
                 <TableCell>{account.email}</TableCell>
                 <TableCell>{account.mobile || "-"}</TableCell>
+                <TableCell>{account.location || "-"}</TableCell>
                 <TableCell>
                   {account.customer?.code ? (
                     <Badge variant="outline" className="font-mono">
@@ -220,6 +223,12 @@ export function AccountRequestsTable() {
                     رقم الهاتف
                   </p>
                   <p className="text-base">{selectedAccount.mobile || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    الموقع / المدينة
+                  </p>
+                  <p className="text-base">{selectedAccount.location || "-"}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">

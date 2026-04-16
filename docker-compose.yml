@@ -1,0 +1,30 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-alwala_db}
+      MYSQL_USER: ${DB_USER:-alwala_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
+    ports:
+      - '127.0.0.1:3306:3306' 
+    volumes:
+      - db_data:/var/lib/mysql
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: mysql://${DB_USER:-alwala_user}:${DB_PASSWORD:-root}@db:3306/${DB_NAME:-alwala_db}
+    depends_on:
+      - db
+
+volumes:
+  db_data: # تم تصحيح هذا الجزء

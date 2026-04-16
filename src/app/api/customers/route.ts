@@ -52,6 +52,7 @@ export async function GET(request: Request) {
             name: true,
             email: true,
             mobile: true,
+            location: true,
             photoUrl: true,
             passportUrl: true,
             role: true,

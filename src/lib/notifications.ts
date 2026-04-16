@@ -39,6 +39,19 @@ export async function sendNotificationToUser(
                         body,
                     },
                     data,
+                    android: {
+                        notification: {
+                            channelId: 'high_importance_channel',
+                            sound: 'notification_sound',
+                        },
+                    },
+                    apns: {
+                        payload: {
+                            aps: {
+                                sound: 'notification_sound.caf',
+                            },
+                        },
+                    },
                     token,
                 };
                 const messageId = await firebaseAdmin.messaging().send(singleMessage);

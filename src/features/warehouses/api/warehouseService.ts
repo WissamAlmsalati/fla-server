@@ -1,5 +1,12 @@
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
+    if (response.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login?expired=true";
+      }
+    }
     const payload = await response.json().catch(() => ({}));
     throw new Error(payload.error ?? "Request failed");
   }

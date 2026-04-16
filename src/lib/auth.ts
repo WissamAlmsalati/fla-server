@@ -69,7 +69,7 @@ export async function requireAuth(request: Request) {
 
 export function signAccessToken(payload: JWTPayload) {
   return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET!, {
-    expiresIn: "1d",
+    expiresIn: "7d",
   });
 }
 

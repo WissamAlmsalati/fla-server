@@ -31,6 +31,7 @@ const exportCustomers = (customers: any[]) => {
     "user.name": "الاسم",
     "user.email": "البريد الإلكتروني",
     "user.mobile": "رقم الهاتف",
+    "user.location": "الموقع / المدينة",
     code: "كود الصين",
     dubaiCode: "كود دبي",
     usaCode: "كود أمريكا",
@@ -195,6 +196,7 @@ export function CustomersTable({ filters }: CustomersTableProps) {
               <TableHead className="text-right">الاسم</TableHead>
               <TableHead className="text-right">البريد الإلكتروني</TableHead>
               <TableHead className="text-right">رقم الهاتف</TableHead>
+              <TableHead className="text-right">الموقع / المدينة</TableHead>
               <TableHead className="text-right">إجراءات</TableHead>
             </TableRow>
           </TableHeader>
@@ -212,6 +214,7 @@ export function CustomersTable({ filters }: CustomersTableProps) {
                   </TableCell>
                   <TableCell>{customer.user.email}</TableCell>
                   <TableCell dir="ltr" className="text-right">{customer.user.mobile || "-"}</TableCell>
+                  <TableCell>{customer.user.location || "-"}</TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex gap-2 justify-end">
                       <EditUserDialog user={customer.user as unknown as User} />

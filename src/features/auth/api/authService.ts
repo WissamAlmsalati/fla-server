@@ -5,8 +5,15 @@ type LoginPayload = {
   password: string;
 };
 
-async function handleResponse<T>(response: Response): Promise<T> {
+async function handleResponse<T>(response: Response, isLogin: boolean = false): Promise<T> {
   if (!response.ok) {
+    if (response.status === 401 && !isLogin) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login?expired=true";
+      }
+    }
     const payload = await response.json().catch(() => ({}));
     // Translate common error messages to Arabic
     let errorMessage = payload.error ?? "Request failed";
@@ -33,5 +40,5 @@ export async function login(payload: LoginPayload) {
     message: string; 
     accessToken: string; 
     user: { id: number; role: string; name: string; email: string } 
-  }>(response);
+  }>(response, true);
 }

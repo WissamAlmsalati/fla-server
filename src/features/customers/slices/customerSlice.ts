@@ -16,6 +16,7 @@ export type Customer = {
     name: string;
     email: string;
     mobile?: string;
+    location?: string;
     photoUrl?: string;
     passportUrl?: string;
     role: string;
