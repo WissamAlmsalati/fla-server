@@ -51,7 +51,7 @@ model Order {
   name              String
   usdPrice          Float
   cnyPrice          Float?
-  productUrl        String?
+  productUrl        String?        @db.Text
   notes             String?
   status            OrderStatus    @default(purchased)
   weight            Float?
