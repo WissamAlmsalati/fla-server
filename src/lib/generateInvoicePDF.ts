@@ -3,8 +3,11 @@ import html2canvas from 'html2canvas';
 import { Order } from '@/features/orders/slices/orderSlice';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 export const generateInvoicePDF = async (order: Order) => {
+  const loadingId = toast.loading('جاري توليد الفاتورة، يرجى الانتظار...');
+
   // Load the logo
   const logoResponse = await fetch('/photos/logo-with-title.png');
   const logoBlob = await logoResponse.blob();
@@ -293,8 +296,8 @@ export const generateInvoicePDF = async (order: Order) => {
   document.body.appendChild(tempDiv);
 
   try {
-    // Wait for fonts to load
-    await document.fonts.ready;
+    // Wait slightly to ensure DOM is updated
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     // Use html2canvas to capture the HTML as an image
     const canvas = await html2canvas(tempDiv, {
@@ -334,9 +337,16 @@ export const generateInvoicePDF = async (order: Order) => {
 
     // Save the PDF
     pdf.save(`inv-${order.customer?.code || 'unknown'}-${dateStr}.pdf`);
+    toast.success('تم تحميل الفاتورة بنجاح', { id: loadingId });
 
+  } catch (error) {
+    console.error('Error generating invoice PDF:', error);
+    toast.error('حدث خطأ أثناء توليد الفاتورة', { id: loadingId });
+    alert('Failed to generate invoice PDF. Check console for details.');
   } finally {
     // Clean up
-    document.body.removeChild(tempDiv);
+    if (tempDiv.parentNode) {
+      document.body.removeChild(tempDiv);
+    }
   }
 };

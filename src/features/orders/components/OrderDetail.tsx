@@ -385,11 +385,6 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
             </CardContent>
           </Card>
         </div>
-
-        {/* Right Column - Status Timeline */}
-        <div className="lg:col-span-1">
-          <StatusTimeline currentStatus={order.status} country={order.country} logs={order.logs} />
-        </div>
       </div>
 
       {/* Edit Drawer */}
