@@ -43,7 +43,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ orde
       });
     }
 
-    return NextResponse.json({ data: messages });
+    const safeMessages = JSON.parse(JSON.stringify(messages));
+    return NextResponse.json({ data: safeMessages });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Error" }, { status: 400 });
   }
