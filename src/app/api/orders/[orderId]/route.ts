@@ -39,8 +39,11 @@ export async function GET(
     }
 
     // Check access rights
-    if (user.role === "CUSTOMER" && order.customerId !== user.customerId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (user.role === "CUSTOMER") {
+      const isOwner = order.customerId === user.customerId || order.customer?.userId === user.sub;
+      if (!isOwner) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
     }
 
     return NextResponse.json(order);
