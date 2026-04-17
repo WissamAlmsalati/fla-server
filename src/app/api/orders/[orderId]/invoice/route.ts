@@ -75,10 +75,10 @@ export async function GET(
       <head>
         <meta charset="UTF-8">
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Tajwal:wght@300;400;700;800&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700;800&display=swap');
           
           body {
-            font-family: 'Tajwal', sans-serif;
+            font-family: 'Tajawal', sans-serif;
             margin: 0;
             padding: 0;
             background: white;
