@@ -40,7 +40,8 @@ export async function GET(
     }
 
     // Check access rights
-    if (user.role === "CUSTOMER" && order.customerId !== user.customerId) {
+    const isOwner = order.customerId === user.customerId || order.customer?.userId === user.sub;
+    if (user.role === "CUSTOMER" && !isOwner) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -434,6 +435,7 @@ export async function GET(
     // Initialize Puppeteer to render HTML to PDF
     const browser = await puppeteer.launch({
       headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     });
 
