@@ -255,7 +255,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
       console.error("Failed to send notification:", notifyError);
     }
 
-    return NextResponse.json({ data: message }, { status: 201 });
+    // Bypass Next.js internal JSON serialization bug with Prisma objects
+    const safeMessage = JSON.parse(JSON.stringify(message));
+    return NextResponse.json({ data: safeMessage }, { status: 201 });
   } catch (error) {
     console.error("Error creating message:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Error" }, { status: 400 });
