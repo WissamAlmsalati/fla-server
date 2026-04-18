@@ -122,139 +122,137 @@ export async function POST(request: Request, { params }: { params: Promise<{ ord
 
     console.log("Message created:", message.id);
 
-    // Send notification to the order's customer if sender is admin/staff
-    try {
-      // Get sender details to check role
-      const sender = await prisma.user.findUnique({
-        where: { id: user.sub },
-        select: { role: true, name: true },
-      });
+    // Run notifications asynchronously without blocking the response
+    const sendNotifications = async () => {
+      try {
+        // Get sender details to check role
+        const sender = await prisma.user.findUnique({
+          where: { id: user.sub },
+          select: { role: true, name: true },
+        });
 
-      // Get order with customer user details
-      const order = await prisma.order.findUnique({
-        where: { id: Number(orderId) },
-        include: {
-          customer: {
-            include: {
-              user: true,
+        // Get order with customer user details
+        const order = await prisma.order.findUnique({
+          where: { id: Number(orderId) },
+          include: {
+            customer: {
+              include: {
+                user: true,
+              },
             },
           },
-        },
-      });
+        });
 
-      // Only send notification if sender is admin/staff and order has a customer with a user
-      const isStaff = sender?.role && ["ADMIN", "PURCHASE_OFFICER", "CHINA_WAREHOUSE", "LIBYA_WAREHOUSE"].includes(sender.role);
-      const customerUser = order?.customer?.user;
+        // Only send notification if sender is admin/staff and order has a customer with a user
+        const isStaff = sender?.role && ["ADMIN", "PURCHASE_OFFICER", "CHINA_WAREHOUSE", "LIBYA_WAREHOUSE"].includes(sender.role);
+        const customerUser = order?.customer?.user;
 
-      if (isStaff && customerUser) {
-        const notificationTitle = "رسالة جديدة";
-        const notificationBody = content?.trim() || "صورة";
+        if (isStaff && customerUser) {
+          const notificationTitle = "رسالة جديدة";
+          const notificationBody = content?.trim() || "صورة";
 
-        // 1. Create database notification for customer
-        try {
-          await prisma.notification.create({
-            data: {
-              userId: customerUser.id,
+          // 1. Create database notification for customer
+          try {
+            await prisma.notification.create({
+              data: {
+                userId: customerUser.id,
+                title: notificationTitle,
+                body: notificationBody,
+                type: "CHAT_MESSAGE",
+                referenceId: Number(orderId),
+                firebaseSent: false,
+              },
+            });
+          } catch (dbError) {
+            console.error(`Failed to create notification for customer ${customerUser.id}:`, dbError);
+          }
+
+          // 2. Send FCM push notification
+          const fcmTokens = (customerUser.fcmTokens as string[]) || [];
+
+          if (fcmTokens.length > 0) {
+            await sendNotificationToUser(
+              fcmTokens,
+              notificationTitle,
+              notificationBody,
+              {
+                type: "CHAT_MESSAGE",
+                orderId: orderId.toString(),
+                messageId: message.id.toString(),
+              },
+              customerUser.id
+            );
+
+            console.log(`Notification sent to customer ${customerUser.id} for order ${orderId}`);
+          }
+        }
+
+        // Send notification to ALL admins when CUSTOMER sends a message
+        const isCustomer = sender?.role === "CUSTOMER";
+
+        if (isCustomer) {
+          // Get all admin/staff users
+          const admins = await prisma.user.findMany({
+            where: {
+              role: {
+                in: ["ADMIN", "PURCHASE_OFFICER", "CHINA_WAREHOUSE", "LIBYA_WAREHOUSE"],
+              },
+            },
+            select: { id: true, fcmTokens: true },
+          });
+
+          const notificationTitle = "رسالة جديدة من عميل";
+          const notificationBody = `طلب #${orderId}: ${content?.trim() || "صورة"}`;
+
+          // 1. Create database notifications for each admin using createMany
+          try {
+            const notificationsData = admins.map(admin => ({
+              userId: admin.id,
               title: notificationTitle,
               body: notificationBody,
               type: "CHAT_MESSAGE",
               referenceId: Number(orderId),
               firebaseSent: false,
-            },
-          });
-        } catch (dbError) {
-          console.error(`Failed to create notification for customer ${customerUser.id}:`, dbError);
-        }
-
-        // 2. Send FCM push notification
-        const fcmTokens = (customerUser.fcmTokens as string[]) || [];
-
-        if (fcmTokens.length > 0) {
-          await sendNotificationToUser(
-            fcmTokens,
-            notificationTitle,
-            notificationBody,
-            {
-              type: "CHAT_MESSAGE",
-              orderId: orderId.toString(),
-              messageId: message.id.toString(),
-            },
-            customerUser.id
-          );
-
-          console.log(`Notification sent to customer ${customerUser.id} for order ${orderId}`);
-        }
-      }
-
-      // Send notification to ALL admins when CUSTOMER sends a message
-      const isCustomer = sender?.role === "CUSTOMER";
-
-      if (isCustomer) {
-        // Get all admin/staff users
-        const admins = await prisma.user.findMany({
-          where: {
-            role: {
-              in: ["ADMIN", "PURCHASE_OFFICER", "CHINA_WAREHOUSE", "LIBYA_WAREHOUSE"],
-            },
-          },
-          select: { id: true, fcmTokens: true },
-        });
-
-        const notificationTitle = "رسالة جديدة من عميل";
-        const notificationBody = `طلب #${orderId}: ${content?.trim() || "صورة"}`;
-
-        // 1. Create database notifications for each admin
-        for (const admin of admins) {
-          try {
-            await prisma.notification.create({
-              data: {
-                userId: admin.id,
-                title: notificationTitle,
-                body: notificationBody,
-                type: "CHAT_MESSAGE",
-                referenceId: Number(orderId),
-                firebaseSent: false, // Will update after FCM attempt
-              },
-            });
+            }));
+            
+            if (notificationsData.length > 0) {
+              await prisma.notification.createMany({
+                data: notificationsData,
+                skipDuplicates: true
+              });
+            }
           } catch (dbError) {
-            console.error(`Failed to create notification for admin ${admin.id}:`, dbError);
+            console.error(`Failed to create bulk notifications for admins:`, dbError);
           }
-        }
 
-        // 2. Collect all admin FCM tokens
-        const adminTokens: { token: string; userId: number }[] = [];
-        for (const admin of admins) {
-          const tokens = (admin.fcmTokens as string[]) || [];
-          for (const token of tokens) {
-            adminTokens.push({ token, userId: admin.id });
-          }
-        }
-
-        // 3. Send FCM push notifications
-        if (adminTokens.length > 0) {
-          for (const { token, userId } of adminTokens) {
-            await sendNotificationToUser(
-              [token],
-              notificationTitle,
-              notificationBody,
-              {
-                type: "CHAT_MESSAGE_ADMIN",
-                orderId: orderId.toString(),
-                messageId: message.id.toString(),
-              },
-              userId
+          // 2. Collect all admin FCM tokens and send in parallel
+          const sendPromises = admins.flatMap(admin => {
+            const tokens = (admin.fcmTokens as string[]) || [];
+            return tokens.map(token => 
+              sendNotificationToUser(
+                [token],
+                notificationTitle,
+                notificationBody,
+                {
+                  type: "CHAT_MESSAGE_ADMIN",
+                  orderId: orderId.toString(),
+                  messageId: message.id.toString(),
+                },
+                admin.id
+              ).catch(e => console.error(`FCM failed for token ${token}`, e))
             );
-          }
+          });
 
-          console.log(`Notification sent to ${adminTokens.length} admin tokens for order ${orderId}`);
+          await Promise.all(sendPromises);
+          console.log(`Notification process finished for admins for order ${orderId}`);
         }
-
-        console.log(`Created DB notifications for ${admins.length} admins for order ${orderId}`);
+      } catch (notifyError) {
+        console.error("Failed to process notifications:", notifyError);
       }
-    } catch (notifyError) {
-      // Don't fail the request if notification fails
-      console.error("Failed to send notification:", notifyError);
-    }
+    };
+
+    // Fire and forget the notifications
+    sendNotifications();
 
     // Bypass Next.js internal JSON serialization bug with Prisma objects
     const safeMessage = JSON.parse(JSON.stringify(message));

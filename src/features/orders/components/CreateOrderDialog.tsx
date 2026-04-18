@@ -145,7 +145,7 @@ export function CreateOrderDialog() {
           إضافة طلب
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]" dir="rtl">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle>إضافة طلب جديد</DialogTitle>
         </DialogHeader>

@@ -73,7 +73,7 @@ export function ChinaWarehouseUpdateDialog({ order }: ChinaWarehouseUpdateDialog
           استلام في الصين
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]" dir="rtl">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle>تحديث حالة الطلب - وصول للصين</DialogTitle>
         </DialogHeader>

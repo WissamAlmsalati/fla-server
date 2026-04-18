@@ -120,27 +120,34 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Calculate unread message counts for each order
-    const ordersWithUnreadCounts = await Promise.all(
-      orders.map(async (order: any) => {
-        const unreadCount = await prisma.orderMessage.count({
-          where: {
-            orderId: order.id,
-            authorId: { not: user.sub },
-            NOT: {
-              readBy: {
-                array_contains: user.sub,
-              },
+    // Calculate unread message counts for each order efficiently in a single query
+    const orderIds = orders.map((o: any) => o.id);
+    let unreadCountMap: Record<number, number> = {};
+
+    if (orderIds.length > 0) {
+      // Find all unread messages for these exact orders in one go
+      const unreadMessages = await prisma.orderMessage.findMany({
+        where: {
+          orderId: { in: orderIds },
+          authorId: { not: user.sub },
+          NOT: {
+            readBy: {
+              array_contains: user.sub, // or hasSome in some prisma versions, but array_contains used in schema
             },
           },
-        });
+        },
+        select: { orderId: true },
+      });
 
-        return {
-          ...order,
-          unreadCount,
-        };
-      })
-    );
+      unreadMessages.forEach((msg) => {
+        unreadCountMap[msg.orderId] = (unreadCountMap[msg.orderId] || 0) + 1;
+      });
+    }
+
+    const ordersWithUnreadCounts = orders.map((order) => ({
+      ...order,
+      unreadCount: unreadCountMap[order.id] || 0,
+    }));
 
     return NextResponse.json({
       data: ordersWithUnreadCounts,
