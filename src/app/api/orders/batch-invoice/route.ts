@@ -407,13 +407,15 @@ export async function POST(request: Request) {
     // Initialize Puppeteer to render HTML to PDF
     const browser = await puppeteer.launch({
       headless: true,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (process.platform === 'linux' ? '/usr/bin/chromium-browser' : undefined),
       args: [
         '--no-sandbox', 
         '--disable-setuid-sandbox', 
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        '--no-zygote'
+        '--no-zygote',
+        '--single-process',
+        '--disable-features=dbus'
       ]
     });
 

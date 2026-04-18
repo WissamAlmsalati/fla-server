@@ -394,7 +394,7 @@ export default function LandingPage() {
             <div className="lp-section-eyebrow">{c.why.title}</div>
             <h2 id="why-h2">{c.why.title}</h2>
             <p className="lp-why-sub">{c.why.sub}</p>
-            <a href="https://wa.me/2189221911999" target="_blank" rel="noopener noreferrer" className="lp-btn-navy" style={{marginTop: 24, display: "inline-flex"}}>{isRtl ? "تواصل عبر واتساب" : "Chat on WhatsApp"}</a>
+            <a href="https://wa.me/218921911999" target="_blank" rel="noopener noreferrer" className="lp-btn-navy" style={{marginTop: 24, display: "inline-flex"}}>{isRtl ? "تواصل عبر واتساب" : "Chat on WhatsApp"}</a>
           </div>
           <div className="lp-why-right">
             {c.why.items.map((w, i) => (
@@ -449,7 +449,7 @@ export default function LandingPage() {
             <h2 id="cta-h2" className="lp-cta__title">{c.cta.t}</h2>
             <p className="lp-cta__sub">{c.cta.s}</p>
           </div>
-          <a href="https://wa.me/2189221911999" target="_blank" rel="noopener noreferrer" className="lp-btn-white">{isRtl ? "تواصل عبر واتساب" : "Chat on WhatsApp"}</a>
+          <a href="https://wa.me/218921911999" target="_blank" rel="noopener noreferrer" className="lp-btn-white">{isRtl ? "تواصل عبر واتساب" : "Chat on WhatsApp"}</a>
         </div>
       </section>
 
