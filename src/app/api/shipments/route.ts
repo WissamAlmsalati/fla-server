@@ -42,7 +42,16 @@ export async function GET(request: Request) {
         skip,
         orderBy: { id: 'desc' }, // Order by ID instead of createdAt since it doesn't exist
         include: {
-          items: {
+          items: currentCustomerId ? {
+            where: {
+              order: {
+                customerId: currentCustomerId
+              }
+            },
+            include: {
+              order: true,
+            },
+          } : {
             include: {
               order: true,
             },
@@ -54,14 +63,9 @@ export async function GET(request: Request) {
       prisma.shipment.count({ where })
     ]);
     
-    // If it's a customer, we might want to filter the items array to ONLY show their items
-    // inside the shipments to save bandwidth.
-    const optimizedShipments = user.role === "CUSTOMER" 
-      ? shipments.map((shipment: any) => ({
-          ...shipment,
-          items: shipment.items.filter((item: any) => item.order?.customerId === currentCustomerId)
-        }))
-      : shipments;
+    // With currentCustomerId in the PRISMA WHERE clause natively,
+    // we don't need to manually filter items in memory anymore.
+    const optimizedShipments = shipments;
 
     return NextResponse.json({ 
       data: optimizedShipments,
