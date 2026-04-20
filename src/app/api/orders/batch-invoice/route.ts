@@ -405,48 +405,53 @@ export async function POST(request: Request) {
     `;
 
     // Initialize Puppeteer to render HTML to PDF
-    const browser = await puppeteer.launch({
-      headless: true,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (process.platform === 'linux' ? '/usr/bin/chromium-browser' : undefined),
-      args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox', 
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--no-zygote',
-        '--single-process',
-        '--disable-features=dbus'
-      ]
-    });
+    let browser;
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (process.platform === 'linux' ? '/usr/bin/chromium-browser' : undefined),
+        args: [
+          '--no-sandbox', 
+          '--disable-setuid-sandbox', 
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--no-zygote',
+          '--single-process',
+          '--disable-features=dbus'
+        ]
+      });
 
-    const page = await browser.newPage();
+      const page = await browser.newPage();
 
-    // Set the HTML content
-    await page.setContent(invoiceHTML, { waitUntil: 'networkidle2', timeout: 15000 });
+      // Set the HTML content
+      await page.setContent(invoiceHTML, { waitUntil: 'load', timeout: 30000 });
 
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: {
-        top: '20px',
-        bottom: '20px',
-        left: '20px',
-        right: '20px'
+      // Generate PDF
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        preferCSSPageSize: true,
+        margin: {
+          top: '20px',
+          bottom: '20px',
+          left: '20px',
+          right: '20px'
+        }
+      });
+
+      // Return the PDF directly as a downloadable file
+      return new NextResponse(Buffer.from(pdfBuffer), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `inline; filename="batch-inv-${customerCode}-${dateStr}.pdf"`,
+        },
+      });
+    } finally {
+      if (browser) {
+        await browser.close().catch((e) => console.error("Error closing browser:", e));
       }
-    });
-
-    await browser.close();
-
-    // Return the PDF directly as a downloadable file
-    return new NextResponse(Buffer.from(pdfBuffer), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="batch-inv-${customerCode}-${dateStr}.pdf"`,
-      },
-    });
+    }
 
   } catch (error) {
     console.error("Batch PDF Generation error:", error);

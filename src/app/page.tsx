@@ -24,5 +24,31 @@ export default async function HomePage() {
     redirect("/dashboard");
   }
 
-  return <LandingPage />;
+  // Schema.org definition for SEO Rich Results
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ShippingDeliveryService",
+    "name": "شركة الولاء الدائم للشحن",
+    "alternateName": "Alwala Shipping",
+    "url": "https://fll.com.ly",
+    "logo": "https://fll.com.ly/photos/logo-without-bg.png",
+    "image": "https://fll.com.ly/photos/logo-without-bg.png",
+    "description": "شركة الولاء الدائم لخدمات الشحن الجوي والبحري من الصين، دبي، أمريكا وتركيا إلى ليبيا",
+    "telephone": "+218921911999",
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "LY",
+      "addressLocality": "Tripoli" // Adjust if necessary
+    }
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <LandingPage />
+    </>
+  );
 }
