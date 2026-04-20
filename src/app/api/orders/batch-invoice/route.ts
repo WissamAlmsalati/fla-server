@@ -406,6 +406,7 @@ export async function POST(request: Request) {
 
     // Initialize Puppeteer to render HTML to PDF
     let browser;
+    let page;
     try {
       browser = await puppeteer.launch({
         headless: true,
@@ -420,7 +421,7 @@ export async function POST(request: Request) {
         ]
       });
 
-      const page = await browser.newPage();
+      page = await browser.newPage();
 
       // Set the HTML content
       await page.setContent(invoiceHTML, { waitUntil: 'load', timeout: 30000 });
@@ -447,6 +448,9 @@ export async function POST(request: Request) {
         },
       });
     } finally {
+      if (page) {
+        try { await page.close(); } catch (e) { console.error("Error closing page:", e); }
+      }
       if (browser) {
         try {
           await browser.close();
