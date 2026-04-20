@@ -416,7 +416,6 @@ export async function POST(request: Request) {
           '--disable-dev-shm-usage',
           '--disable-gpu',
           '--no-zygote',
-          '--single-process',
           '--disable-features=dbus'
         ]
       });
@@ -449,7 +448,20 @@ export async function POST(request: Request) {
       });
     } finally {
       if (browser) {
-        await browser.close().catch((e) => console.error("Error closing browser:", e));
+        try {
+          await browser.close();
+        } catch (e) {
+          console.error("Error closing browser via close():", e);
+        }
+        // Force kill the chromium process to prevent zombie processes memory leaks
+        try {
+          const childProcess = browser.process();
+          if (childProcess && typeof childProcess.kill === 'function') {
+            childProcess.kill('SIGKILL');
+          }
+        } catch (e) {
+          console.error("Error killing browser process:", e);
+        }
       }
     }
 
