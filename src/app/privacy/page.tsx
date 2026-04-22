@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "سياسة الخصوصية - Privacy Policy",
@@ -22,14 +21,23 @@ const DEFAULT_CLAUSES: Clause[] = [
   { title: "٥. التحديثات والتعديلات", body: "قد نقوم بتحديث هذه السياسة من وقت لآخر. سيتم نشر التغييرات على هذه الصفحة مع إشعار مسبق في حال وجود تغييرات جوهرية." },
 ];
 
+async function loadPrivacyPolicyFromDb() {
+  if (!process.env.DATABASE_URL) {
+    return null;
+  }
+
+  const { prisma } = await import("@/lib/prisma");
+  return prisma.siteSettings.findUnique({
+    where: { key: "privacy_policy" },
+  });
+}
+
 export default async function PrivacyPolicyPage() {
   let clauses: Clause[] = DEFAULT_CLAUSES;
   let lastUpdated = new Date();
 
   try {
-    const setting = await prisma.siteSettings.findUnique({
-      where: { key: "privacy_policy" },
-    });
+    const setting = await loadPrivacyPolicyFromDb();
 
     if (setting && setting.value) {
       clauses = JSON.parse(setting.value);
