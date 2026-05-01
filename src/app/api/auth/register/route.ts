@@ -7,7 +7,7 @@ const registerSchema = z.object({
     name: z.string().min(2),
     email: z.string().email(),
     password: z.string().min(6),
-    mobile: z.string().min(10),
+    mobile: z.string().min(10).optional(),
     location: z.string().optional(),
     fcmToken: z.string().optional().describe("Firebase Cloud Messaging token for push notifications"),
 });
@@ -18,18 +18,16 @@ export async function POST(request: Request) {
         const payload = registerSchema.parse(body);
 
         // Check if user already exists
+        const orConditions: any[] = [{ email: payload.email }];
+        if (payload.mobile) orConditions.push({ mobile: payload.mobile });
+
         const existingUser = await prisma.user.findFirst({
-            where: {
-                OR: [
-                    { email: payload.email },
-                    { mobile: payload.mobile },
-                ],
-            },
+            where: { OR: orConditions },
         });
 
         if (existingUser) {
             return NextResponse.json(
-                { error: "User with this email or mobile already exists" },
+                { error: "هذا البريد الإلكتروني أو رقم الهاتف مسجل بالفعل" },
                 { status: 400 }
             );
         }
@@ -39,13 +37,10 @@ export async function POST(request: Request) {
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
         // Clean up any existing pending registration for this email/mobile
+        const cleanupConditions: any[] = [{ email: payload.email }];
+        if (payload.mobile) cleanupConditions.push({ mobile: payload.mobile });
         await prisma.pendingRegistration.deleteMany({
-            where: {
-                OR: [
-                    { email: payload.email },
-                    { mobile: payload.mobile },
-                ],
-            },
+            where: { OR: cleanupConditions },
         });
 
         await prisma.pendingRegistration.create({

@@ -180,7 +180,7 @@ model PendingRegistration {
   name         String
   email        String   @unique
   passwordHash String
-  mobile       String   @unique
+  mobile       String?  @unique
   otp          String
   fcmToken     String?
   location     String?

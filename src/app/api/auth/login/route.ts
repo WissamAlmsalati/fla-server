@@ -117,6 +117,7 @@ export async function POST(request: Request) {
         email: user.email,
         role: user.role,
         location: user.location,
+        mobile: user.mobile,
         customerId: user.customerId,
         code: user.customer?.code,
         dubaiCode: user.customer?.dubaiCode,
