@@ -18,15 +18,41 @@ export async function POST(request: Request) {
         if (!dbUser) {
             return NextResponse.json({ error: "المستخدم غير موجود" }, { status: 404 });
         }
+        const body = await request.json();
+        const { mobile } = schema.parse(body);
+
         if (dbUser.mobile) {
+            if (dbUser.mobile === mobile) {
+                // If it's the exact same mobile, just return 200 OK with the user
+                // to help frontend bypass the gate if it's out of sync
+                const userWithCustomer = await prisma.user.findUnique({
+                    where: { id: user.sub },
+                    include: { customer: true },
+                });
+                
+                return NextResponse.json({
+                    message: "رقم الهاتف مضاف بالفعل",
+                    user: {
+                        id: userWithCustomer!.id,
+                        name: userWithCustomer!.name,
+                        email: userWithCustomer!.email,
+                        role: userWithCustomer!.role,
+                        customerId: userWithCustomer!.customerId,
+                        mobile: userWithCustomer!.mobile,
+                        code: userWithCustomer!.customer?.code,
+                        dubaiCode: userWithCustomer!.customer?.dubaiCode,
+                        usaCode: userWithCustomer!.customer?.usaCode,
+                        turkeyCode: userWithCustomer!.customer?.turkeyCode,
+                        location: userWithCustomer!.location,
+                    },
+                });
+            }
+
             return NextResponse.json(
-                { error: "رقم الهاتف مضاف بالفعل ولا يمكن تغييره" },
+                { error: "يوجد رقم هاتف مضاف بالفعل ولا يمكن تغييره" },
                 { status: 400 }
             );
         }
-
-        const body = await request.json();
-        const { mobile } = schema.parse(body);
 
         // Check the mobile is not already taken by another user
         const existing = await prisma.user.findFirst({ where: { mobile } });
